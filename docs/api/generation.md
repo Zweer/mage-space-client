@@ -285,7 +285,104 @@ Use the `id_token` as `authToken` in generation requests.
 
 ## TODO
 
-- [ ] Capture a completed response to see exact `result` format
-- [ ] Document video-specific parameters (duration, first/last frame)
+- [x] ~~Capture a completed response to see exact `result` format~~ — Done
+- [ ] Document video-specific parameters for plum (requires Max tier)
 - [ ] Test which models don't require gems in slow mode
 - [ ] Document reference image upload flow
+
+---
+
+## Video Generation (Berry-2)
+
+Video generation uses the same `runArchitecture` action but with different architecture config.
+
+**Key differences from image generation:**
+- `duration` is a **string** (e.g., `"3"`, `"5"`, `"7"`) not a number!
+- Uses `berry_aspect_ratio` instead of `aspect_ratio`
+- No `moodboard` field
+- `resolution` is video-specific: `"480p"`, `"720p"`
+
+### Berry-2 Request Body (480p, unlimited for Pro Plus)
+
+```json
+[{
+  "architectureConfig": {
+    "seed": null,
+    "prompt": "A cat walking on a sunny sidewalk\n",
+    "model_id": "berry-2",
+    "fast_mode": false,
+    "resolution": "480p",
+    "architecture": "berry",
+    "berry_aspect_ratio": "9:16",
+    "duration": "3",
+    "image": "$undefined",
+    "additional_images": [],
+    "characters": [],
+    "references": [],
+    "audio_references": []
+  },
+  "architectureConfigToSave": "$0:0:architectureConfig",
+  "authToken": "<firebase_id_token>",
+  "conceptId": "0b1fa74f7347406392422d24f2885684",
+  "activePowerPack": null,
+  "generationMode": "unlimited"
+}]
+```
+
+### Video Parameters
+
+| Field | Type | Values |
+|-------|------|--------|
+| `duration` | string | `"3"`, `"4"`, `"5"`, `"6"`, `"8"`, `"10"`, `"16"` |
+| `berry_aspect_ratio` | string | `"16:9"`, `"9:16"`, `"1:1"`, `"4:3"`, `"3:4"` |
+| `resolution` | string | `"480p"` (unlimited Pro Plus), `"720p"` (default) |
+| `image` | string | CDN URL for first frame, or `"$undefined"` for text-only |
+
+### Video with Character + First Frame
+
+```json
+{
+  "architectureConfig": {
+    "seed": null,
+    "prompt": "@echoescri-c6hj walking toward camera\n",
+    "model_id": "berry-2",
+    "fast_mode": false,
+    "resolution": "480p",
+    "architecture": "berry",
+    "berry_aspect_ratio": "9:16",
+    "duration": "3",
+    "image": "https://cdn3.mage.space/temp/30d/creations/.../image.jpg",
+    "additional_images": [],
+    "characters": [{
+      "id": "34664e1f-954c-4630-98bd-8215616286e2",
+      "name": "echoes-cri",
+      "username": "echoescri-c6hj",
+      "image_url": "https://cdn3.mage.space/characters/.../image.jpg",
+      "audio_url": "$undefined"
+    }],
+    "references": [],
+    "audio_references": []
+  },
+  "architectureConfigToSave": "$0:0:architectureConfig",
+  "authToken": "<token>",
+  "conceptId": "0b1fa74f7347406392422d24f2885684",
+  "activePowerPack": null,
+  "generationMode": "unlimited"
+}
+```
+
+### Berry-2 Duration Limits by Tier
+
+| Tier | Max Duration (480p) |
+|------|-------------------|
+| Pro | 3s |
+| Pro Plus | 7s |
+| Max | 9s |
+
+### Other Video Models
+
+| Model | Tier Required | Notes |
+|-------|--------------|-------|
+| Plum | Max only | Error 4267 for Pro Plus |
+| Berry-2 720p | Gems | Higher resolution costs gems |
+| Kiwi | Retired? | Returns RSC error |
