@@ -1,0 +1,14 @@
+pre-commit:
+  parallel: true
+  commands:
+    lint:
+      glob: "*.{ts,js,json,md}"
+      run: npx biome check --write --no-errors-on-unmatched --files-ignore-unknown=true {staged_files}
+      stage_fixed: true
+    typecheck:
+      run: npm run lint:typecheck
+
+commit-msg:
+  commands:
+    commitlint:
+      run: npx commitlint --edit {1}
