@@ -16,7 +16,7 @@ Mage.space is **NOT a REST API**. It uses Next.js Server Actions:
 |------|------|--------|
 | `auth.md` | Firebase token refresh, session creation | ✅ Verified |
 | `generation.md` | Submit job, poll status, get result | ✅ Verified |
-| `characters.md` | Character search/CRUD | ✅ Verified (search) |
+| `characters.md` | Character search/CRUD | ✅ Verified |
 | `actions.md` | Action hash discovery mechanism | ✅ Verified |
 
 ## Key Discoveries
