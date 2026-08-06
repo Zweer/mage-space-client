@@ -186,8 +186,10 @@ Single argument: the `history_id` returned by `runArchitecture`.
 | Status | Meaning |
 |--------|---------|
 | `"running"` | Job is in progress, keep polling |
-| `"completed"` | Job finished, `result` contains output |
+| `"success"` | Job finished, `result` contains output |
 | `"error"` | Job failed, `error` contains details |
+
+**NOTE:** The status is `"success"` (not `"completed"` as initially documented).
 
 ### Response (completed)
 

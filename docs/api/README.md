@@ -5,35 +5,36 @@ Reverse-engineered API reference produced by the `rev-eng` agent via Playwright 
 ## Architecture
 
 Mage.space is **NOT a REST API**. It uses Next.js Server Actions:
-- Single endpoint: `POST https://www.mage.space/creations`
+- Single endpoint: `POST https://www.mage.space/explore` (for generation)
 - Differentiated by `next-action` header (hex hash of server function)
 - Body: JSON array of arguments
 - Response: RSC (React Server Component) wire format
 
 ## Files
 
-| File | Area |
-|------|------|
-| `auth.md` | Firebase token refresh, session creation |
-| `generation.md` | Submit job, poll status, get result |
-| `characters.md` | Character search/CRUD |
-| `history.md` | List past generations |
-| `actions.md` | Action hash discovery mechanism |
+| File | Area | Status |
+|------|------|--------|
+| `auth.md` | Firebase token refresh, session creation | ✅ Verified |
+| `generation.md` | Submit job, poll status, get result | ✅ Verified |
+| `characters.md` | Character search/CRUD | ✅ Verified (search) |
+| `actions.md` | Action hash discovery mechanism | ✅ Verified |
 
-## How It's Produced
+## Key Discoveries
 
-The `rev-eng` agent:
-1. Opens a Chromium browser via Playwright MCP
-2. Authenticates via Firebase (refresh token → ID token → session)
-3. Navigates mage.space, performing actions via UI
-4. Captures all network requests (next-action headers, bodies, RSC responses)
-5. Documents action hashes, parameters, and response structures
-6. Does NOT generate images unless absolutely necessary (credits)
+1. **Endpoint is `/explore`** — not `/creations` (for generation)
+2. **`generationMode: "unlimited"`** — required for Pro Plus/Max tier
+3. **Session cookie required** — created via `createUserSession` from ID token
+4. **Action hashes change per deploy** — discovered via `createServerReference` in JS bundles
+5. **Status is `"success"`** — not `"completed"` as initially assumed
 
-## Status
+## Verified End-to-End Flow
 
-- [x] auth.md (ported from publisher docs)
-- [x] generation.md (ported from publisher docs)
-- [ ] characters.md
-- [ ] history.md
-- [ ] actions.md (discovery mechanism)
+```
+1. Refresh Token → ID Token (Firebase REST API)
+2. ID Token → Session Cookie (createUserSession action)
+3. Submit generation (runArchitecture on /explore)
+4. Poll (getHistoryById every 5s)
+5. Result: CDN image URL
+```
+
+Tested and working as of 2026-08-06.
