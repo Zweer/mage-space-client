@@ -70,6 +70,15 @@ Action hashes are embedded in the JavaScript bundles as `createServerReference()
 | `40842140a2e9467f854870c6ad20e3dcf17bece652` | `unfollowCharacter` | Unfollow a character |
 | `402d9d8cf924262612f29b5ef3d1a6a97d3a0a9d7a` | `followCharacter` | Follow a character |
 
+### Uploads
+
+| Hash | Function | Purpose |
+|------|----------|---------|
+| `60869f48fe83aa95969a6549f84023c9e115ee274f` | `uploadCharacterImage` | Upload character reference image (base64 data URL) |
+| `606ba2b0eb79bd8f28c609706a89b52e0d9f517fa6` | `uploadReferenceImage` | Upload generation reference image (base64 data URL) |
+| `708619f9a5e99ca3afc8f412eb925bb7a2b96ca7ee` | `getUserImageUploadUrl` | Get signed upload URL (used internally) |
+| `70f0a069eb99daec47836fd911347732d47515df99` | `getUserVideoUploadUrl` | Get video upload URL |
+
 ### References
 
 | Hash | Function | Purpose |

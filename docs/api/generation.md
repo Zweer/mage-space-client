@@ -283,12 +283,87 @@ Use the `id_token` as `authToken` in generation requests.
 
 ---
 
+---
+
+## Generation History (`getHistoryPaginated`)
+
+**Action Hash:** `787d245f6320977164c554a189a4d5b80c18ca3347`
+
+### Request Body
+
+```json
+["r7gvVxS5NCeTiajvYiRRsNO0hiW2", 10, 0, {"status": "success", "type": "$undefined"}]
+```
+
+| Arg | Type | Description |
+|-----|------|-------------|
+| 0 | string | User ID |
+| 1 | number | Limit (max results) |
+| 2 | number | Offset (pagination) |
+| 3 | object | Filters: `status` = `"success"`, `type` = `"$undefined"` for all |
+
+### Response
+
+```json
+{
+  "histories": [
+    {
+      "id": "f65dc9bf-...",
+      "status": "success",
+      "model_id": "mango-v3-pro",
+      "architecture": "mango",
+      "result": { "data": { "image": "https://cdn3.mage.space/..." } },
+      "architecture_config": { "prompt": "...", ... }
+    }
+  ],
+  "hasMore": true
+}
+```
+
+**Verified working** ✅ (2026-08-06)
+
+---
+
+## Multiple Reference Images
+
+Mango supports up to **10 reference images**. Use `image` for the first and `additional_images` for the rest:
+
+```json
+{
+  "architectureConfig": {
+    "image": "https://cdn3.mage.space/.../first.jpg",
+    "additional_images": [
+      "https://cdn3.mage.space/.../second.jpg",
+      "https://cdn3.mage.space/.../third.jpg"
+    ],
+    ...
+  }
+}
+```
+
+### Max Images by Architecture
+
+| Architecture | Max Images | Notes |
+|---|---|---|
+| `mango` | 10 | |
+| `cherry` | 8 | |
+| `melon` | 7 | `firstFrameKey: "first_image"` |
+| `raspberry` | 5 | `firstFrameKey: "first_image"` |
+| `berry` (video) | 9 | `firstFrameKey: "first_image"` |
+| `plum` (video) | 9 | `firstFrameKey: "first_image"` |
+| `guava` | 3 | |
+| `gpt_image_2` | 15 | |
+| `nano_banana_v2` | 14 | |
+
+---
+
 ## TODO
 
 - [x] ~~Capture a completed response to see exact `result` format~~ — Done
-- [ ] Document video-specific parameters for plum (requires Max tier)
+- [x] ~~Document video-specific parameters~~ — Done (Berry-2)
+- [x] ~~Document reference image upload flow~~ — Done (`uploadReferenceImage`)
 - [ ] Test which models don't require gems in slow mode
-- [ ] Document reference image upload flow
+- [ ] Document plum video parameters (requires Max tier)
 
 ---
 

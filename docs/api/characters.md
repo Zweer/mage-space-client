@@ -286,11 +286,55 @@ TODO: Needs further investigation for parameters.
 
 Before creating a character, the reference image must be uploaded:
 
-1. Call `getUserImageUploadUrl` (`708619f9a5e99ca3afc8f412eb925bb7a2b96ca7ee`) to get a signed upload URL
-2. Upload the image to the returned URL
-3. Use the resulting CDN URL as `image_url` in `createCharacter`
+1. Resize/compress the image client-side (max 904px, fixed 512px, JPEG quality 1.0)
+2. Convert to data URL: `data:image/jpeg;base64,...`
+3. Call `uploadCharacterImage(dataUrl, uid)` → returns CDN URL
+4. Use the resulting CDN URL as `image_url` in `createCharacter`
 
-TODO: Document exact parameters for `getUserImageUploadUrl`.
+### Upload Character Image (`uploadCharacterImage`)
+
+**Action Hash:** `60869f48fe83aa95969a6549f84023c9e115ee274f`
+
+**Request Body:**
+```json
+["data:image/jpeg;base64,/9j/4AAQ...", "r7gvVxS5NCeTiajvYiRRsNO0hiW2"]
+```
+
+| Arg | Type | Description |
+|-----|------|-------------|
+| 0 | string | Data URL (base64-encoded JPEG/PNG/WebP) |
+| 1 | string | User ID |
+
+**Response:** CDN URL string
+```
+"https://cdn3.mage.space/characters/{uid}/image/{hash}.jpg"
+```
+
+**Verified working** ✅ (2026-08-06)
+
+### Upload Reference Image (`uploadReferenceImage`)
+
+**Action Hash:** `606ba2b0eb79bd8f28c609706a89b52e0d9f517fa6`
+
+Same format as `uploadCharacterImage` but stores in `/references/` path:
+
+**Request Body:**
+```json
+["data:image/jpeg;base64,/9j/4AAQ...", "r7gvVxS5NCeTiajvYiRRsNO0hiW2"]
+```
+
+**Response:** CDN URL string
+```
+"https://cdn3.mage.space/references/{uid}/image/{hash}.jpg"
+```
+
+**Verified working** ✅ (2026-08-06)
+
+### Notes
+
+- If the image is already on CDN (`cdn3.mage.space/characters/{uid}/...`), no upload is needed — pass the URL directly
+- Image format: JPEG preferred, also accepts PNG and WebP
+- The server returns the same hash for identical image content (deduplication)
 
 ---
 
