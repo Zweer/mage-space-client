@@ -454,6 +454,31 @@ Video generation uses the same `runArchitecture` action but with different archi
 | Pro Plus | 7s |
 | Max | 9s |
 
+### Video Response (completed)
+
+When polling returns `status: "success"` for a video:
+```json
+{
+  "status": "success",
+  "result": {
+    "data": {
+      "seed": -1,
+      "video": "https://cdn3.mage.space/temp/30d/creations/{uid}/video/{hash}.mp4",
+      "width": 480,
+      "height": 848,
+      "embedding": [...],
+      "moderation": { "is_nsfw": false, "is_forbidden": false }
+    },
+    "type": "video",
+    "duration": 71.9
+  }
+}
+```
+
+**Note:** Video result uses `data.video` field (not `data.image`). No separate thumbnail is provided.
+
+**Verified working** ✅ (2026-08-06)
+
 ### Other Video Models
 
 | Model | Tier Required | Notes |

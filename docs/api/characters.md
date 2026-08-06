@@ -338,6 +338,53 @@ Same format as `uploadCharacterImage` but stores in `/references/` path:
 
 ---
 
+## Create Reference (`createReference`)
+
+**Action Hash:** `406d91cfd5589042bd72defa1071bc7c3fb84810c4`
+
+References are reusable image/audio assets that can be used across multiple generations (separate from characters).
+
+### Request Body
+
+```json
+[{
+  "name": "my-reference",
+  "username": "myreference-abcd",
+  "image_url": "https://cdn3.mage.space/references/{uid}/image/{hash}.jpg",
+  "audio_url": null,
+  "modality": "image",
+  "variant": "reference",
+  "description": null,
+  "tags": [],
+  "visibility": "private",
+  "moderation": []
+}]
+```
+
+### Parameters
+
+| Field | Type | Required | Description |
+|-------|------|----------|-------------|
+| `name` | string | ✅ | Display name |
+| `username` | string | ✅ | Unique handle (name + 4-char suffix) |
+| `image_url` | string | ✅ for image | CDN URL from `uploadReferenceImage` |
+| `audio_url` | string | ✅ for audio | CDN URL for audio reference |
+| `modality` | string | ✅ | `"image"` or `"audio"` |
+| `variant` | string | ✅ | `"reference"` for image references, `"audio"` for audio |
+| `description` | string/null | ❌ | Optional description |
+| `tags` | string[] | ✅ | Category tags (can be empty) |
+| `visibility` | string | ✅ | `"private"` or `"public"` |
+| `moderation` | string[] | ✅ | Empty array `[]` |
+
+### Response
+
+Returns the created reference object with `id` field.
+
+**Verified working** ✅ (2026-08-06)
+
+---
+
+
 ## Using Characters in Generation
 
 In the `architectureConfig.characters` array:
