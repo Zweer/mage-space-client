@@ -2,19 +2,15 @@
   "extends": "npm-package-json-lint-config-default",
   "rules": {
     "require-author": "error",
+    "require-bugs": "error",
     "require-description": "error",
     "require-engines": "error",
     "require-homepage": "error",
     "require-keywords": "error",
     "require-license": "error",
     "require-repository": "error",
-    "require-version": "error",
-    "name-format": "error",
-    "version-format": "error",
-    "valid-values-license": ["error", ["MIT"]],
     "no-duplicate-properties": "error",
-    "no-empty-mappings": "error",
-    "prefer-property-order": "off",
-    "description-format": "off"
+    "valid-values-license": ["error", ["MIT"]],
+    "valid-values-private": ["error", [false]]
   }
 }

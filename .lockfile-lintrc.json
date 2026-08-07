@@ -1,7 +1,6 @@
 {
   "path": "package-lock.json",
   "type": "npm",
-  "allowedSchemes": ["https:"],
-  "allowedHosts": ["npm.pkg.github.com"],
-  "emptyHostname": true
+  "validate-https": true,
+  "allowed-hosts": ["npm"]
 }
