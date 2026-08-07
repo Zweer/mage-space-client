@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.0.1](https://github.com/Zweer/mage-space-client/compare/v1.0.0...v1.0.1) (2026-08-07)
+
+
+### Bug Fixes
+
+* **actions:** :bug: fall back to chunk response for x-deployment-id ([c648771](https://github.com/Zweer/mage-space-client/commit/c6487714047ec2139c5dc8112e878217ddd9d988))
+
 ## 1.0.0 (2026-08-07)
 
 
