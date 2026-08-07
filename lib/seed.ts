@@ -41,5 +41,8 @@ export const SEED_SNAPSHOT: ActionSnapshot = {
     deleteCreation: '407e9ce3d04c7274e3341bf8450633dc8e3935ec9c',
     deleteManyCreations: '403d071e9dc36382b3efff80470e6d76b3edd299b8',
     saveCreation: '6087f655eaef4de56a01fb6c6a84df58cea0632e5f',
+    generateCharacterVoice: '6052462e345ee9878d5c36c2a160ea1873919c2b41',
+    followCharacter: '402d9d8cf924262612f29b5ef3d1a6a97d3a0a9d7a',
+    unfollowCharacter: '40842140a2e9467f854870c6ad20e3dcf17bece652',
   },
 };

@@ -198,4 +198,58 @@ describe('MageSpaceClient characters', () => {
     expect(page.characters[0]?.id).toBe('c-9');
     expect(sentArgs).toEqual([20, 0, { uid: 'uid-1', visibility: 'private' }]);
   });
+
+  it('generates a character voice and returns the audio URL', async () => {
+    // Arrange
+    let sentArgs: unknown;
+    server.use(
+      tokenHandler,
+      sessionHandler,
+      http.post(`${BASE}/explore`, async ({ request }) => {
+        if (request.headers.get('next-action') !== SEED_SNAPSHOT.hashes.generateCharacterVoice) {
+          return HttpResponse.text('not found', { status: 404 });
+        }
+        sentArgs = await request.json();
+        return HttpResponse.text(
+          envelope('{"ok":true,"data":{"audioUrl":"https://cdn/voice.mp3","gemsCharged":10}}'),
+        );
+      }),
+    );
+    const client = new MageSpaceClient({ refreshToken: 'rt' });
+
+    // Act
+    const res = await client.characters.generateVoice({
+      imageUrl: 'https://cdn/c.jpg',
+      guidancePrompt: 'warm female voice',
+    });
+
+    // Assert
+    expect(res.ok).toBe(true);
+    expect(res.data?.audioUrl).toBe('https://cdn/voice.mp3');
+    expect(sentArgs).toEqual([
+      { imageUrl: 'https://cdn/c.jpg', guidancePrompt: 'warm female voice' },
+      'a.b.c',
+    ]);
+  });
+
+  it('follows a character (resolves without a value)', async () => {
+    // Arrange
+    let sentArgs: unknown;
+    server.use(
+      tokenHandler,
+      sessionHandler,
+      http.post(`${BASE}/explore`, async ({ request }) => {
+        if (request.headers.get('next-action') !== SEED_SNAPSHOT.hashes.followCharacter) {
+          return HttpResponse.text('not found', { status: 404 });
+        }
+        sentArgs = await request.json();
+        return HttpResponse.text(envelope('"$undefined"'));
+      }),
+    );
+    const client = new MageSpaceClient({ refreshToken: 'rt' });
+
+    // Act & Assert
+    await expect(client.characters.follow('c-1')).resolves.toBeUndefined();
+    expect(sentArgs).toEqual(['c-1']);
+  });
 });

@@ -66,7 +66,10 @@ export type ActionName =
   | 'deleteManyHistories'
   | 'deleteCreation'
   | 'deleteManyCreations'
-  | 'saveCreation';
+  | 'saveCreation'
+  | 'generateCharacterVoice'
+  | 'followCharacter'
+  | 'unfollowCharacter';
 
 /** Map of Server Action function name → hex action hash. */
 export type ActionHashes = Record<string, string>;
@@ -515,4 +518,27 @@ export interface ListCreationsOptions {
   limit?: number;
   /** Pagination offset (default 0). */
   offset?: number;
+}
+
+export interface GenerateVoiceOptions {
+  /** CDN URL of the character's reference image. */
+  imageUrl: string;
+  /** Text describing the desired voice (default empty). */
+  guidancePrompt?: string;
+}
+
+/** Result of `generateCharacterVoice`. */
+export interface VoiceResult {
+  ok: boolean;
+  data?: {
+    /** CDN URL of the generated MP3 voice. */
+    audioUrl: string;
+    /** Gems charged for the generation. */
+    gemsCharged?: number;
+  };
+  error?: {
+    code: string;
+    required_gems?: number;
+    balance_gems?: number;
+  };
 }

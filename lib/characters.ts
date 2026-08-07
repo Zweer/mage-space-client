@@ -17,9 +17,11 @@ import type {
   CharacterPage,
   CharacterSearchResult,
   CreateCharacterInput,
+  GenerateVoiceOptions,
   ListCharactersOptions,
   SearchCharactersOptions,
   UpdateCharacterInput,
+  VoiceResult,
 } from './types.js';
 
 /** Character actions are served from the `/explore` page. */
@@ -189,5 +191,55 @@ export class CharactersService {
       session,
     });
     return data;
+  }
+
+  /**
+   * Generate a voice for a character from its reference image.
+   *
+   * @remarks Costs gems (not covered by the unlimited tier).
+   * @experimental Request body inferred from JS bundle; not yet verified live.
+   */
+  async generateVoice(opts: GenerateVoiceOptions): Promise<VoiceResult> {
+    const [authToken, session] = await Promise.all([
+      this.auth.getIdToken(),
+      this.auth.getSession(),
+    ]);
+    const { data } = await this.http.callAction<VoiceResult>({
+      action: 'generateCharacterVoice',
+      path: CHARACTERS_PATH,
+      args: [{ imageUrl: opts.imageUrl, guidancePrompt: opts.guidancePrompt ?? '' }, authToken],
+      session,
+    });
+    return data;
+  }
+
+  /**
+   * Follow a (public) character.
+   *
+   * @experimental Request body inferred from JS bundle; not yet verified live.
+   */
+  async follow(id: string): Promise<void> {
+    const session = await this.auth.getSession();
+    await this.http.callAction({
+      action: 'followCharacter',
+      path: CHARACTERS_PATH,
+      args: [id],
+      session,
+    });
+  }
+
+  /**
+   * Unfollow a character.
+   *
+   * @experimental Request body inferred from JS bundle; not yet verified live.
+   */
+  async unfollow(id: string): Promise<void> {
+    const session = await this.auth.getSession();
+    await this.http.callAction({
+      action: 'unfollowCharacter',
+      path: CHARACTERS_PATH,
+      args: [id],
+      session,
+    });
   }
 }
