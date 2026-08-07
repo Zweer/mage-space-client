@@ -124,4 +124,33 @@ describe('MageSpaceClient references', () => {
     expect(ref.name).toBe('renamed');
     expect(sentArgs).toEqual(['r-3', { name: 'renamed' }]);
   });
+
+  it('refuses to delete a reference without explicit confirmation', async () => {
+    // Arrange — guard must throw before any request is made
+    const client = new MageSpaceClient({ refreshToken: 'rt' });
+
+    // Act & Assert
+    await expect(client.references.delete('r-9')).rejects.toThrow(/confirm/i);
+  });
+
+  it('deletes a reference when confirmed', async () => {
+    // Arrange
+    let sentArgs: unknown;
+    server.use(
+      tokenHandler,
+      sessionHandler,
+      http.post(`${BASE}/explore`, async ({ request }) => {
+        if (request.headers.get('next-action') !== SEED_SNAPSHOT.hashes.deleteReference) {
+          return HttpResponse.text('not found', { status: 404 });
+        }
+        sentArgs = await request.json();
+        return HttpResponse.text(envelope('"$undefined"'));
+      }),
+    );
+    const client = new MageSpaceClient({ refreshToken: 'rt' });
+
+    // Act & Assert
+    await expect(client.references.delete('r-9', { confirm: true })).resolves.toBeUndefined();
+    expect(sentArgs).toEqual(['r-9']);
+  });
 });

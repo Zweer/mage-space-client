@@ -13,6 +13,12 @@ import type { ActionCache, ActionName, ActionSnapshot, FetchLike } from './types
 const CREATE_SERVER_REF_RE = /createServerReference\)\("([0-9a-f]+)"[^)]*?"([^"]+)"\)/g;
 /** `/_next/static/chunks/....js` references in the page HTML. */
 const CHUNK_RE = /\/_next\/static\/chunks\/[^"'`()\s]+?\.js/g;
+/**
+ * Default pages scraped during discovery. Server Actions are split per route, so
+ * a single page misses route-specific actions (e.g. `deleteReference` lives only
+ * in the `/references` bundle) — scrape the main routes and union their chunks.
+ */
+const DISCOVERY_PAGES = ['/explore', '/creations', '/characters', '/references'];
 
 /** Default in-process snapshot cache. */
 export class InMemoryActionCache implements ActionCache {
@@ -30,8 +36,10 @@ export class InMemoryActionCache implements ActionCache {
 export interface DiscoveryOptions {
   fetch: FetchLike;
   baseUrl: string;
-  /** Page to scrape for chunk references (default `/explore`). */
+  /** Single page to scrape for chunk references (overrides {@link discoveryPaths}). */
   discoveryPath?: string;
+  /** Pages to scrape and union (default: the main app routes). */
+  discoveryPaths?: string[];
 }
 
 /**
@@ -42,24 +50,37 @@ export interface DiscoveryOptions {
  */
 export async function discoverActions(opts: DiscoveryOptions): Promise<ActionSnapshot> {
   const { fetch, baseUrl } = opts;
-  const page = opts.discoveryPath ?? '/explore';
+  const pages =
+    opts.discoveryPath !== undefined
+      ? [opts.discoveryPath]
+      : (opts.discoveryPaths ?? DISCOVERY_PAGES);
 
-  const res = await fetch(`${baseUrl}${page}`, { headers: { accept: 'text/html' } });
-  if (!res.ok) {
-    throw new DiscoveryError(`Failed to fetch discovery page ${page}: HTTP ${res.status}`);
-  }
-  const deploymentId = res.headers.get('x-deployment-id') ?? '';
-  const html = await res.text();
-
+  let deploymentId = '';
   const chunkPaths = new Set<string>();
-  for (const match of html.matchAll(CHUNK_RE)) {
-    const chunkPath = match[0];
-    if (chunkPath !== undefined) {
-      chunkPaths.add(chunkPath);
+  for (const page of pages) {
+    let res: Response;
+    try {
+      res = await fetch(`${baseUrl}${page}`, { headers: { accept: 'text/html' } });
+    } catch {
+      // A single unreachable page must not abort discovery.
+      continue;
+    }
+    if (!res.ok) {
+      continue;
+    }
+    if (deploymentId === '') {
+      deploymentId = res.headers.get('x-deployment-id') ?? '';
+    }
+    const html = await res.text();
+    for (const match of html.matchAll(CHUNK_RE)) {
+      const chunkPath = match[0];
+      if (chunkPath !== undefined) {
+        chunkPaths.add(chunkPath);
+      }
     }
   }
   if (chunkPaths.size === 0) {
-    throw new DiscoveryError('No JS chunk references found in discovery page HTML');
+    throw new DiscoveryError('No JS chunk references found in discovery pages');
   }
 
   const hashes: ActionSnapshot['hashes'] = {};
@@ -98,6 +119,7 @@ export interface ActionRegistryOptions {
   cache?: ActionCache;
   seed?: ActionSnapshot;
   discoveryPath?: string;
+  discoveryPaths?: string[];
   /** Re-discover when the snapshot is older than this (ms). 0 = never by age. */
   maxAgeMs?: number;
 }
@@ -112,6 +134,7 @@ export class ActionRegistry {
   private readonly cache: ActionCache;
   private readonly seed: ActionSnapshot | undefined;
   private readonly discoveryPath: string | undefined;
+  private readonly discoveryPaths: string[] | undefined;
   private readonly maxAgeMs: number;
   private snapshot: ActionSnapshot | null = null;
   private inflight: Promise<ActionSnapshot> | null = null;
@@ -122,6 +145,7 @@ export class ActionRegistry {
     this.cache = opts.cache ?? new InMemoryActionCache();
     this.seed = opts.seed;
     this.discoveryPath = opts.discoveryPath;
+    this.discoveryPaths = opts.discoveryPaths;
     this.maxAgeMs = opts.maxAgeMs ?? 0;
   }
 
@@ -158,6 +182,7 @@ export class ActionRegistry {
           fetch: this.fetch,
           baseUrl: this.baseUrl,
           discoveryPath: this.discoveryPath,
+          discoveryPaths: this.discoveryPaths,
         });
         this.snapshot = fresh;
         await this.cache.save(fresh);

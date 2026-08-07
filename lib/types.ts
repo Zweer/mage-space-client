@@ -58,6 +58,7 @@ export type ActionName =
   | 'uploadReferenceImage'
   | 'createReference'
   | 'updateReference'
+  | 'deleteReference'
   | 'getReferences'
   | 'getReferencesPaginated'
   | 'getCharactersPaginated'

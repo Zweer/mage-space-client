@@ -1,6 +1,6 @@
 /** Generation history listing via `getHistoryPaginated`. */
 import type { AuthManager } from './auth.js';
-import { MageSpaceError } from './errors.js';
+import { requireConfirm } from './errors.js';
 import type { HttpClient } from './http.js';
 import type {
   ConfirmOptions,
@@ -17,15 +17,6 @@ const HISTORY_PATH = '/creations';
 const DEFAULT_LIMIT = 10;
 /** RSC sentinel for an absent value. */
 const UNDEFINED = '$undefined';
-
-/** Guard for irreversible operations: throws unless `{ confirm: true }` is passed. */
-function requireConfirm(action: string, opts: ConfirmOptions | undefined): void {
-  if (opts?.confirm !== true) {
-    throw new MageSpaceError(
-      `${action} is irreversible and requires explicit confirmation: pass { confirm: true }`,
-    );
-  }
-}
 
 export class HistoryService {
   constructor(

@@ -218,6 +218,32 @@ Returns the created reference object with `id` field.
 
 ---
 
+## Delete Reference (`deleteReference`)
+
+**Action Hash:** `409dd73e6daafe43b500b0c9f012a33fc5350af196`
+**Chunk:** `6309-18511fe93a155edc.js` (loaded on the `/references` route)
+
+### Request Body
+
+```json
+["<reference_id>"]
+```
+
+Single argument: the reference UUID to delete.
+
+### Response
+
+Returns `"$undefined"` on success (soft-delete).
+
+### Notes
+
+- This action lives ONLY in the `/references` route bundle, so single-page discovery
+  from `/explore` misses it — action discovery must scrape `/references` too.
+- ⚠️ Irreversible.
+- **Verified live via HAR capture** ✅ (2026-08-07)
+
+---
+
 ## Upload Reference Image (`uploadReferenceImage`)
 
 **Action Hash:** `606ba2b0eb79bd8f28c609706a89b52e0d9f517fa6`

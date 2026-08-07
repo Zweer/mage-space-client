@@ -30,6 +30,39 @@ describe('discoverActions', () => {
     expect(snapshot.hashes.runArchitecture).toBe('40abc123');
     expect(snapshot.hashes.createUserSession).toBe('60def456');
   });
+
+  it('scrapes multiple route pages and unions their chunks (route-specific actions)', async () => {
+    // Arrange — deleteReference only exists in the /references bundle
+    const fetchImpl: FetchLike = async (input) => {
+      if (input.endsWith('/explore')) {
+        return new Response('<script src="/_next/static/chunks/explore.js"></script>', {
+          headers: { 'x-deployment-id': 'dpl_multi' },
+        });
+      }
+      if (input.endsWith('/references')) {
+        return new Response('<script src="/_next/static/chunks/references.js"></script>');
+      }
+      if (input.endsWith('/explore.js')) {
+        return new Response(
+          '(0,i.createServerReference)("40a1b2",i.c,void 0,i.f,"runArchitecture")',
+        );
+      }
+      if (input.endsWith('/references.js')) {
+        return new Response(
+          '(0,i.createServerReference)("409d73",i.c,void 0,i.f,"deleteReference")',
+        );
+      }
+      return new Response('not found', { status: 404 });
+    };
+
+    // Act
+    const snapshot = await discoverActions({ fetch: fetchImpl, baseUrl: BASE });
+
+    // Assert
+    expect(snapshot.deploymentId).toBe('dpl_multi');
+    expect(snapshot.hashes.runArchitecture).toBe('40a1b2');
+    expect(snapshot.hashes.deleteReference).toBe('409d73');
+  });
 });
 
 describe('ActionRegistry', () => {

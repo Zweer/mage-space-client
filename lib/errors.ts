@@ -62,3 +62,16 @@ export class TimeoutError extends MageSpaceError {
     this.name = 'TimeoutError';
   }
 }
+
+/**
+ * Guard for irreversible operations: throws unless `{ confirm: true }` is passed.
+ *
+ * @throws {MageSpaceError} when confirmation is missing.
+ */
+export function requireConfirm(action: string, opts?: { confirm?: boolean }): void {
+  if (opts?.confirm !== true) {
+    throw new MageSpaceError(
+      `${action} is irreversible and requires explicit confirmation: pass { confirm: true }`,
+    );
+  }
+}

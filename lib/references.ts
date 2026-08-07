@@ -7,8 +7,10 @@
  * public feed) per `docs/api/references.md`.
  */
 import type { AuthManager } from './auth.js';
+import { requireConfirm } from './errors.js';
 import type { HttpClient } from './http.js';
 import type {
+  ConfirmOptions,
   CreateReferenceInput,
   ListReferencesOptions,
   Modality,
@@ -77,6 +79,21 @@ export class ReferencesService {
       session,
     });
     return data;
+  }
+
+  /**
+   * Permanently delete a reference (soft-delete). Irreversible — requires
+   * `{ confirm: true }`.
+   */
+  async delete(id: string, opts?: ConfirmOptions): Promise<void> {
+    requireConfirm('deleteReference', opts);
+    const session = await this.auth.getSession();
+    await this.http.callAction({
+      action: 'deleteReference',
+      path: REFERENCES_PATH,
+      args: [id],
+      session,
+    });
   }
 
   /** List the caller's own references for a given modality (default `image`). */

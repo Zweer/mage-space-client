@@ -32,6 +32,7 @@ export const SEED_SNAPSHOT: ActionSnapshot = {
     uploadReferenceImage: '606ba2b0eb79bd8f28c609706a89b52e0d9f517fa6',
     createReference: '406d91cfd5589042bd72defa1071bc7c3fb84810c4',
     updateReference: '602d6bb3ba2609661f07330224f6fd075e7af6bc9e',
+    deleteReference: '409dd73e6daafe43b500b0c9f012a33fc5350af196',
     getReferences: '60a0357a926bc3e4031c00e62ca815e3ea21b3eb35',
     getReferencesPaginated: '7069d599ab890e353b790d46df56160d5c0a85348a',
     getCharactersPaginated: '7085cf87746975cbec2868405a026e22b97a20cfb4',
