@@ -16,7 +16,10 @@ Mage.space is **NOT a REST API**. It uses Next.js Server Actions:
 |------|------|--------|
 | `auth.md` | Firebase token refresh, session creation | ✅ Verified |
 | `generation.md` | Submit job, poll status, get result | ✅ Verified |
-| `characters.md` | Character search/CRUD | ✅ Verified |
+| `characters.md` | Character search/CRUD/follow/voice | ✅ Verified |
+| `references.md` | Reference CRUD, paginated listing | ✅ Verified |
+| `history.md` | History listing, creations save/delete | ✅ Verified |
+| `concepts.md` | Official concepts + community models | ✅ Verified |
 | `actions.md` | Action hash discovery mechanism | ✅ Verified |
 
 ## Key Discoveries
@@ -26,6 +29,9 @@ Mage.space is **NOT a REST API**. It uses Next.js Server Actions:
 3. **Session cookie required** — created via `createUserSession` from ID token
 4. **Action hashes change per deploy** — discovered via `createServerReference` in JS bundles
 5. **Status is `"success"`** — not `"completed"` as initially assumed
+6. **`getCharactersPaginated`** — signature is `(limit, offset, options)`, NOT `(uid, limit, offset)`
+7. **`getConceptsParallel`** — signature is `(filters, sortOrder, limit, offset)`
+8. **`getReferencesPaginated`** — signature is `(limit, offset, options)` with `orderBy` sort
 
 ## Verified End-to-End Flow
 
@@ -37,4 +43,9 @@ Mage.space is **NOT a REST API**. It uses Next.js Server Actions:
 5. Result: CDN image URL
 ```
 
-Tested and working as of 2026-08-06.
+Tested and working as of 2026-08-07.
+
+## Current Deployment
+
+- **Deployment ID:** `dpl_GLUqzVNVADQR5wogKksDvu1m3BdH`
+- **Last verified:** 2026-08-07

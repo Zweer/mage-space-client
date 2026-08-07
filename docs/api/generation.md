@@ -324,6 +324,104 @@ Use the `id_token` as `authToken` in generation requests.
 
 ---
 
+## Using References in Generation
+
+References (image/audio assets created via the References API) are passed in the `architectureConfig.references` array. Unlike characters, references are **NOT** mentioned with `@username` in the prompt — they influence the generation style/content automatically.
+
+### Reference Object Format (in architectureConfig)
+
+```json
+{
+  "id": "a6decda3-008a-4c82-a05b-f9fd75f8f6fb",
+  "name": "rev-test-ref",
+  "username": "revtestref-a1b2",
+  "image_url": "https://cdn3.mage.space/references/{uid}/image/{hash}.jpg",
+  "audio_url": "$undefined"
+}
+```
+
+| Field | Type | Description |
+|-------|------|-------------|
+| `id` | string (uuid) | Reference UUID from `createReference` |
+| `name` | string | Reference display name |
+| `username` | string | Reference unique handle |
+| `image_url` | string | CDN URL of the reference image |
+| `audio_url` | string/undefined | CDN URL of audio reference, or `"$undefined"` |
+
+### Differences from Characters
+
+| Aspect | Characters | References |
+|--------|-----------|------------|
+| Array field | `architectureConfig.characters` | `architectureConfig.references` |
+| Prompt mention | Required: `@username` in prompt | **Not required** — no @-mention |
+| Object shape | Same: `{id, name, username, image_url, audio_url}` | Same: `{id, name, username, image_url, audio_url}` |
+| Variant | `"character"` | `"reference"`, `"object"`, `"outfit"`, `"pose"` |
+| Effect | Identity/face preservation | Style/composition influence |
+
+### Example Request Body (with reference)
+
+```json
+[{
+  "architectureConfig": {
+    "seed": null,
+    "prompt": "A simple landscape with warm tones matching the reference\n",
+    "model_id": "mango-v3-pro",
+    "fast_mode": false,
+    "resolution": "1K",
+    "architecture": "mango",
+    "aspect_ratio": "portrait",
+    "image": "$undefined",
+    "additional_images": [],
+    "characters": [],
+    "references": [
+      {
+        "id": "a6decda3-008a-4c82-a05b-f9fd75f8f6fb",
+        "name": "rev-test-ref",
+        "username": "revtestref-a1b2",
+        "image_url": "https://cdn3.mage.space/references/{uid}/image/{hash}.jpg",
+        "audio_url": "$undefined"
+      }
+    ],
+    "audio_references": [],
+    "moodboard": "$undefined"
+  },
+  "architectureConfigToSave": "$0:0:architectureConfig",
+  "authToken": "<firebase_id_token>",
+  "conceptId": "5fc3641aee004def9407b9fdc4432c22",
+  "activePowerPack": null,
+  "generationMode": "unlimited"
+}]
+```
+
+### Architecture Support for References
+
+Not all architectures support references. From JS bundle analysis:
+
+| Architecture | Supports References |
+|---|---|
+| `mango` | ✅ Yes |
+| `cherry` | ✅ Yes |
+| `berry` | ✅ Yes |
+| `plum` | ✅ Yes |
+| `raspberry` | ✅ Yes |
+| `melon` | ✅ Yes |
+| `blueberry` | ✅ Yes |
+| `grok_image` | ✅ Yes |
+| `grok_video` | ✅ Yes |
+| `guava` | ✅ Yes |
+| `flux` | ❌ No |
+| `veo3` | ❌ No |
+
+### Notes
+
+- The transform function for building reference objects is **identical** to characters: `{id, name, username, image_url, audio_url}`
+- If `audio_url` is null/undefined, pass `"$undefined"` (same as characters)
+- The prompt does NOT need to reference the reference — just include it in the `references` array
+- References count toward the total image slot limit of the architecture
+- **Verified working** ✅ (2026-08-07) — API accepted reference in generation request body
+
+---
+
 ## Multiple Reference Images
 
 Mango supports up to **10 reference images**. Use `image` for the first and `additional_images` for the rest:

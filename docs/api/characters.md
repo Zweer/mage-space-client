@@ -253,7 +253,65 @@ Returns array of character objects.
 
 ### Request Body
 
-TODO: Needs further investigation.
+```json
+[100, 0, {"uid": "r7gvVxS5NCeTiajvYiRRsNO0hiW2"}]
+```
+
+| Arg | Type | Description |
+|-----|------|-------------|
+| 0 | number | Limit (max results per page) |
+| 1 | number | Offset (for pagination) |
+| 2 | object | Options/filters (see below) |
+
+### Options Object
+
+| Field | Type | Description |
+|-------|------|-------------|
+| `uid` | string | Filter by user ID (returns only that user's characters) |
+| `visibility` | string | Filter by visibility: `"private"` or `"public"` |
+| `modality` | string | Filter by modality: `"image"` or `"audio"` |
+| `featured` | boolean | If `true`, returns only featured characters |
+
+When `uid` is omitted or options is `{}`, returns public/featured characters globally.
+
+### Response (RSC → parsed)
+
+```json
+{
+  "characters": [
+    {
+      "id": "761c92fc-628d-4943-9d2d-408ba512c138",
+      "uid": "r7gvVxS5NCeTiajvYiRRsNO0hiW2",
+      "name": "echoes-ele-2",
+      "username": "echoesele2-x68s",
+      "image_url": "https://cdn3.mage.space/characters/.../image.jpg",
+      "audio_url": null,
+      "modality": "image",
+      "description": null,
+      "tags": ["realistic", "female"],
+      "visibility": "private",
+      "moderation": [],
+      "num_plays_all_time": 51,
+      "num_plays_monthly": 51,
+      "num_plays_daily": 1,
+      "num_plays_hourly": 0,
+      "num_plays_quarter_hourly": 0,
+      "created_at": "$D2026-07-14T14:45:52.116Z",
+      "is_deleted": false,
+      "is_featured": false,
+      "variant": "character"
+    }
+  ],
+  "hasMore": true
+}
+```
+
+### Notes
+
+- Returns `{ characters: [...], hasMore: boolean }`
+- `hasMore` indicates if more results are available at the next offset
+- Without `uid` filter, returns the public character feed (newest first)
+- **Verified working** ✅ (2026-08-07)
 
 ---
 
@@ -278,7 +336,65 @@ TODO: Needs further investigation.
 **Action Hash:** `6052462e345ee9878d5c36c2a160ea1873919c2b41`
 **Chunk:** `7547-ebaf1440bf2bf014.js`
 
-TODO: Needs further investigation for parameters.
+### Request Body
+
+```json
+[{"imageUrl": "https://cdn3.mage.space/characters/.../image.jpg", "guidancePrompt": "warm and friendly female voice"}, "<firebase_id_token>"]
+```
+
+| Arg | Type | Description |
+|-----|------|-------------|
+| 0 | object | Generation parameters (see below) |
+| 1 | string | Firebase ID token (authToken) |
+
+### Parameters (Arg 0)
+
+| Field | Type | Required | Description |
+|-------|------|----------|-------------|
+| `imageUrl` | string | ✅ | CDN URL of the character's reference image |
+| `guidancePrompt` | string | ❌ | Text describing the desired voice characteristics (can be empty `""`) |
+
+### Response (success)
+
+```json
+{
+  "ok": true,
+  "data": {
+    "audioUrl": "https://cdn3.mage.space/references/{uid}/audio/{hash}.mp3",
+    "gemsCharged": 10
+  }
+}
+```
+
+### Response (error)
+
+```json
+{
+  "ok": false,
+  "error": {
+    "code": "insufficient_gems",
+    "required_gems": 10,
+    "balance_gems": 0
+  }
+}
+```
+
+### Error Codes
+
+| Code | Meaning |
+|------|---------|
+| `not_authenticated` | User is not signed in |
+| `image_required` | Character must have an image before generating voice |
+| `insufficient_gems` | Not enough gems (includes `required_gems` and `balance_gems`) |
+| `generation_failed` | Server error — retry |
+
+### Notes
+
+- Costs gems (not included in unlimited tier)
+- Uses `SEED_AUDIO` architecture with `seed-audio-1.0` model internally
+- Output format: MP3, sample rate 24kHz, duration ~5s
+- The resulting `audioUrl` can be used in `updateCharacter` or `createCharacter` as `audio_url`
+- **Discovered from JS bundle** (2026-08-07)
 
 ---
 
@@ -338,53 +454,6 @@ Same format as `uploadCharacterImage` but stores in `/references/` path:
 
 ---
 
-## Create Reference (`createReference`)
-
-**Action Hash:** `406d91cfd5589042bd72defa1071bc7c3fb84810c4`
-
-References are reusable image/audio assets that can be used across multiple generations (separate from characters).
-
-### Request Body
-
-```json
-[{
-  "name": "my-reference",
-  "username": "myreference-abcd",
-  "image_url": "https://cdn3.mage.space/references/{uid}/image/{hash}.jpg",
-  "audio_url": null,
-  "modality": "image",
-  "variant": "reference",
-  "description": null,
-  "tags": [],
-  "visibility": "private",
-  "moderation": []
-}]
-```
-
-### Parameters
-
-| Field | Type | Required | Description |
-|-------|------|----------|-------------|
-| `name` | string | ✅ | Display name |
-| `username` | string | ✅ | Unique handle (name + 4-char suffix) |
-| `image_url` | string | ✅ for image | CDN URL from `uploadReferenceImage` |
-| `audio_url` | string | ✅ for audio | CDN URL for audio reference |
-| `modality` | string | ✅ | `"image"` or `"audio"` |
-| `variant` | string | ✅ | `"reference"` for image references, `"audio"` for audio |
-| `description` | string/null | ❌ | Optional description |
-| `tags` | string[] | ✅ | Category tags (can be empty) |
-| `visibility` | string | ✅ | `"private"` or `"public"` |
-| `moderation` | string[] | ✅ | Empty array `[]` |
-
-### Response
-
-Returns the created reference object with `id` field.
-
-**Verified working** ✅ (2026-08-06)
-
----
-
-
 ## Using Characters in Generation
 
 In the `architectureConfig.characters` array:
@@ -403,3 +472,51 @@ The prompt should mention the character using `@username`:
 ```
 "Full body photo of @echoescri-c6hj walking through a park"
 ```
+
+---
+
+## Follow Character (`followCharacter`)
+
+**Action Hash:** `402d9d8cf924262612f29b5ef3d1a6a97d3a0a9d7a`
+**Chunk:** `8109-7d4c61fea1a3ded1.js`
+
+### Request Body
+
+```json
+["<character_id>"]
+```
+
+Single argument: the character UUID to follow.
+
+### Response
+
+Returns `"$undefined"` on success.
+
+### Notes
+
+- Requires `__session` cookie (authenticated user)
+- **Discovered from JS bundle** (2026-08-07)
+
+---
+
+## Unfollow Character (`unfollowCharacter`)
+
+**Action Hash:** `40842140a2e9467f854870c6ad20e3dcf17bece652`
+**Chunk:** `8109-7d4c61fea1a3ded1.js`
+
+### Request Body
+
+```json
+["<character_id>"]
+```
+
+Single argument: the character UUID to unfollow.
+
+### Response
+
+Returns `"$undefined"` on success.
+
+### Notes
+
+- Requires `__session` cookie (authenticated user)
+- **Discovered from JS bundle** (2026-08-07)
