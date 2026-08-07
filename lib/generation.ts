@@ -74,8 +74,7 @@ export class GenerationService {
       const code = Number(data.error_code);
       throw new GenerationError(errorMessageForCode(code), code);
     }
-    const historyId =
-      data !== null && typeof data === 'object' ? data.history_id : undefined;
+    const historyId = data !== null && typeof data === 'object' ? data.history_id : undefined;
     if (typeof historyId !== 'string') {
       throw new GenerationError('runArchitecture did not return a history_id');
     }

@@ -1,4 +1,4 @@
-import { http, HttpResponse } from 'msw';
+import { HttpResponse, http } from 'msw';
 import { setupServer } from 'msw/node';
 import { afterAll, afterEach, beforeAll, describe, expect, it } from 'vitest';
 import { GenerationError } from '../lib/errors.js';
@@ -49,7 +49,9 @@ describe('MageSpaceClient generation', () => {
         }
         if (action === SEED_SNAPSHOT.hashes.getHistoryById) {
           return HttpResponse.text(
-            envelope('{"id":"h-1","status":"success","result":{"data":{"image":"https://cdn/x.jpg"}}}'),
+            envelope(
+              '{"id":"h-1","status":"success","result":{"data":{"image":"https://cdn/x.jpg"}}}',
+            ),
           );
         }
         return HttpResponse.text('not found', { status: 404 });
