@@ -81,4 +81,118 @@ describe('MageSpaceClient generation', () => {
     // Act & Assert
     await expect(client.generate({ prompt: 'blocked prompt' })).rejects.toThrow(GenerationError);
   });
+
+  it('submits a video job with berry_aspect_ratio/duration and returns a video result', async () => {
+    // Arrange
+    let sentConfig: Record<string, unknown> | undefined;
+    server.use(
+      tokenHandler,
+      sessionHandler,
+      http.post(`${BASE}/explore`, async ({ request }) => {
+        const action = request.headers.get('next-action');
+        if (action === SEED_SNAPSHOT.hashes.runArchitecture) {
+          const body = (await request.json()) as [{ architectureConfig: Record<string, unknown> }];
+          sentConfig = body[0]?.architectureConfig;
+          return HttpResponse.text(envelope('{"history_id":"v-1"}'));
+        }
+        if (action === SEED_SNAPSHOT.hashes.getHistoryById) {
+          return HttpResponse.text(
+            envelope(
+              '{"id":"v-1","status":"success","result":{"type":"video","data":{"video":"https://cdn/v.mp4"}}}',
+            ),
+          );
+        }
+        return HttpResponse.text('not found', { status: 404 });
+      }),
+    );
+    const client = new MageSpaceClient({ refreshToken: 'rt' });
+
+    // Act
+    const { historyId } = await client.generateVideo({
+      prompt: 'a cat walking',
+      duration: '5',
+      aspectRatio: '16:9',
+    });
+    const result = await client.waitForResult(historyId, { intervalMs: 1, timeoutMs: 5000 });
+
+    // Assert
+    expect(historyId).toBe('v-1');
+    expect(result.result?.data.video).toBe('https://cdn/v.mp4');
+    expect(sentConfig?.model_id).toBe('berry-2');
+    expect(sentConfig?.architecture).toBe('berry');
+    expect(sentConfig?.berry_aspect_ratio).toBe('16:9');
+    expect(sentConfig?.duration).toBe('5');
+    expect(sentConfig).not.toHaveProperty('moodboard');
+  });
+
+  it('passes the first image and additional_images through for multi-reference generation', async () => {
+    // Arrange
+    let sentConfig: Record<string, unknown> | undefined;
+    server.use(
+      tokenHandler,
+      sessionHandler,
+      http.post(`${BASE}/explore`, async ({ request }) => {
+        const action = request.headers.get('next-action');
+        if (action === SEED_SNAPSHOT.hashes.runArchitecture) {
+          const body = (await request.json()) as [{ architectureConfig: Record<string, unknown> }];
+          sentConfig = body[0]?.architectureConfig;
+          return HttpResponse.text(envelope('{"history_id":"h-2"}'));
+        }
+        return HttpResponse.text('not found', { status: 404 });
+      }),
+    );
+    const client = new MageSpaceClient({ refreshToken: 'rt' });
+
+    // Act
+    const { historyId } = await client.generate({
+      prompt: 'blend these',
+      image: 'https://cdn/first.jpg',
+      additionalImages: ['https://cdn/second.jpg', 'https://cdn/third.jpg'],
+    });
+
+    // Assert
+    expect(historyId).toBe('h-2');
+    expect(sentConfig?.image).toBe('https://cdn/first.jpg');
+    expect(sentConfig?.additional_images).toEqual([
+      'https://cdn/second.jpg',
+      'https://cdn/third.jpg',
+    ]);
+  });
+
+  it('places references into architectureConfig.references with the character shape', async () => {
+    // Arrange
+    let sentConfig: Record<string, unknown> | undefined;
+    server.use(
+      tokenHandler,
+      sessionHandler,
+      http.post(`${BASE}/explore`, async ({ request }) => {
+        if (request.headers.get('next-action') !== SEED_SNAPSHOT.hashes.runArchitecture) {
+          return HttpResponse.text('not found', { status: 404 });
+        }
+        const body = (await request.json()) as [{ architectureConfig: Record<string, unknown> }];
+        sentConfig = body[0]?.architectureConfig;
+        return HttpResponse.text(envelope('{"history_id":"h-3"}'));
+      }),
+    );
+    const client = new MageSpaceClient({ refreshToken: 'rt' });
+
+    // Act
+    await client.generate({
+      prompt: 'warm tones',
+      references: [
+        { id: 'r-1', name: 'ref', username: 'ref-aaaa', image_url: 'https://cdn/ref.jpg' },
+      ],
+    });
+
+    // Assert
+    expect(sentConfig?.references).toEqual([
+      {
+        id: 'r-1',
+        name: 'ref',
+        username: 'ref-aaaa',
+        image_url: 'https://cdn/ref.jpg',
+        audio_url: '$undefined',
+      },
+    ]);
+  });
 });

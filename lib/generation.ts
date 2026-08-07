@@ -5,7 +5,16 @@
 import type { AuthManager } from './auth.js';
 import { GenerationError, TimeoutError } from './errors.js';
 import type { HttpClient } from './http.js';
-import type { ArchitectureConfig, GenerateOptions, HistoryItem, WaitOptions } from './types.js';
+import type {
+  ArchitectureConfig,
+  CharacterRef,
+  GenerateOptions,
+  GenerateVideoOptions,
+  GenerationMode,
+  HistoryItem,
+  VideoArchitectureConfig,
+  WaitOptions,
+} from './types.js';
 
 /** Generation actions are served from the `/explore` page. */
 const GENERATION_PATH = '/explore';
@@ -13,6 +22,8 @@ const GENERATION_PATH = '/explore';
 const UNDEFINED = '$undefined';
 /** Default concept id for mango-v3-pro (from docs — verify per model via rev-eng). */
 const DEFAULT_CONCEPT_ID = '0cd8c7ed2e554d0f98f20c8cf8c0f7c';
+/** Default concept id for berry-2 video (from docs — verify per model via rev-eng). */
+const DEFAULT_BERRY_CONCEPT_ID = '0b1fa74f7347406392422d24f2885684';
 
 const DEFAULT_POLL_INTERVAL_MS = 4000;
 const DEFAULT_TIMEOUT_MS = 5 * 60 * 1000;
@@ -23,13 +34,8 @@ export class GenerationService {
     private readonly auth: AuthManager,
   ) {}
 
-  /** Submit a generation job and return its `historyId`. */
+  /** Submit an image generation job and return its `historyId`. */
   async submit(opts: GenerateOptions): Promise<{ historyId: string }> {
-    const [authToken, session] = await Promise.all([
-      this.auth.getIdToken(),
-      this.auth.getSession(),
-    ]);
-
     const config: ArchitectureConfig = {
       seed: opts.seed ?? null,
       prompt: opts.prompt,
@@ -40,26 +46,57 @@ export class GenerationService {
       aspect_ratio: opts.aspectRatio ?? 'portrait',
       image: opts.image ?? UNDEFINED,
       additional_images: opts.additionalImages ?? [],
-      characters: (opts.characters ?? []).map((c) => ({
-        id: c.id,
-        name: c.name,
-        username: c.username,
-        image_url: c.image_url,
-        audio_url: c.audio_url ?? UNDEFINED,
-      })),
-      references: [],
+      characters: mapCharacters(opts.characters),
+      references: mapCharacters(opts.references),
       audio_references: [],
       moodboard: UNDEFINED,
     };
+    return this.runArchitecture(config, opts.conceptId ?? DEFAULT_CONCEPT_ID, opts.generationMode);
+  }
+
+  /** Submit a video generation job (Berry-2 family) and return its `historyId`. */
+  async submitVideo(opts: GenerateVideoOptions): Promise<{ historyId: string }> {
+    const config: VideoArchitectureConfig = {
+      seed: opts.seed ?? null,
+      prompt: opts.prompt,
+      model_id: opts.model ?? 'berry-2',
+      fast_mode: opts.fastMode ?? false,
+      resolution: opts.resolution ?? '480p',
+      architecture: opts.architecture ?? 'berry',
+      berry_aspect_ratio: opts.aspectRatio ?? '9:16',
+      duration: opts.duration ?? '3',
+      image: opts.image ?? UNDEFINED,
+      additional_images: opts.additionalImages ?? [],
+      characters: mapCharacters(opts.characters),
+      references: mapCharacters(opts.references),
+      audio_references: [],
+    };
+    return this.runArchitecture(
+      config,
+      opts.conceptId ?? DEFAULT_BERRY_CONCEPT_ID,
+      opts.generationMode,
+    );
+  }
+
+  /** Shared `runArchitecture` call for image and video configs. */
+  private async runArchitecture(
+    config: ArchitectureConfig | VideoArchitectureConfig,
+    conceptId: string,
+    generationMode: GenerationMode = 'unlimited',
+  ): Promise<{ historyId: string }> {
+    const [authToken, session] = await Promise.all([
+      this.auth.getIdToken(),
+      this.auth.getSession(),
+    ]);
 
     const args = [
       {
         architectureConfig: config,
         architectureConfigToSave: '$0:0:architectureConfig',
         authToken,
-        conceptId: opts.conceptId ?? DEFAULT_CONCEPT_ID,
+        conceptId,
         activePowerPack: null,
-        generationMode: opts.generationMode ?? 'unlimited',
+        generationMode,
       },
     ];
 
@@ -91,6 +128,17 @@ export class GenerationService {
       session,
     });
     return data;
+  }
+
+  /** Cancel a running generation job. */
+  async cancelJob(historyId: string): Promise<void> {
+    const session = await this.auth.getSession();
+    await this.http.callAction({
+      action: 'cancelArchitectureJob',
+      path: GENERATION_PATH,
+      args: [historyId],
+      session,
+    });
   }
 
   /** Poll until the job leaves the `running` state, returning the final record. */
@@ -132,6 +180,17 @@ function delay(ms: number, signal?: AbortSignal): Promise<void> {
       { once: true },
     );
   });
+}
+
+/** Normalize characters for an `architectureConfig`, defaulting absent audio to the RSC sentinel. */
+function mapCharacters(characters: CharacterRef[] = []): CharacterRef[] {
+  return characters.map((c) => ({
+    id: c.id,
+    name: c.name,
+    username: c.username,
+    image_url: c.image_url,
+    audio_url: c.audio_url ?? UNDEFINED,
+  }));
 }
 
 function errorMessageForCode(code: number): string {

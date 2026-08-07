@@ -45,7 +45,28 @@ export type ActionName =
   | 'runArchitecture'
   | 'getHistoryById'
   | 'cancelArchitectureJob'
-  | 'getHistoryPaginated';
+  | 'getHistoryPaginated'
+  | 'getMentionSuggestionsParallel'
+  | 'createCharacter'
+  | 'updateCharacter'
+  | 'deleteCharacter'
+  | 'getCharacter'
+  | 'getCharacters'
+  | 'publishCharacter'
+  | 'unpublishCharacter'
+  | 'uploadCharacterImage'
+  | 'uploadReferenceImage'
+  | 'createReference'
+  | 'updateReference'
+  | 'getReferences'
+  | 'getReferencesPaginated'
+  | 'getCharactersPaginated'
+  | 'getCreationsPaginatedParallel'
+  | 'deleteHistory'
+  | 'deleteManyHistories'
+  | 'deleteCreation'
+  | 'deleteManyCreations'
+  | 'saveCreation';
 
 /** Map of Server Action function name → hex action hash. */
 export type ActionHashes = Record<string, string>;
@@ -188,12 +209,95 @@ export interface GenerateOptions {
   fastMode?: boolean;
   /** Characters to inject into the generation. */
   characters?: CharacterRef[];
+  /**
+   * Reference assets to influence style/composition. Same object shape as
+   * characters; unlike characters they are NOT `@username`-mentioned in the
+   * prompt (see `docs/api/generation.md`).
+   */
+  references?: CharacterRef[];
   /** First reference image URL. */
   image?: string;
   /** Additional reference image URLs. */
   additionalImages?: string[];
   /** Override the generation mode (default `unlimited`). */
   generationMode?: GenerationMode;
+}
+
+// ---------------------------------------------------------------------------
+// Video generation (Berry-2 family)
+// ---------------------------------------------------------------------------
+
+/** Aspect ratios accepted by video architectures (`berry_aspect_ratio`). */
+export type VideoAspectRatio = '16:9' | '9:16' | '1:1' | '4:3' | '3:4';
+/** Video output resolutions (`480p` unlimited on Pro Plus; `720p` costs gems). */
+export type VideoResolution = '480p' | '720p';
+
+/**
+ * The `architectureConfig` payload for video architectures.
+ *
+ * @remarks
+ * Differs from the image {@link ArchitectureConfig}: `duration` is a string,
+ * aspect ratio is `berry_aspect_ratio`, and there is no `moodboard` field.
+ */
+export interface VideoArchitectureConfig {
+  seed: number | null;
+  prompt: string;
+  model_id: string;
+  fast_mode: boolean;
+  /** `480p` or `720p`. */
+  resolution: string;
+  architecture: string;
+  berry_aspect_ratio?: VideoAspectRatio;
+  /** Clip length in seconds — a string (e.g. `"3"`, `"5"`, `"7"`). */
+  duration: string;
+  /** First-frame image URL, or the `$undefined` sentinel. */
+  image: string;
+  additional_images: string[];
+  characters: CharacterRef[];
+  references: unknown[];
+  audio_references: unknown[];
+}
+
+export interface GenerateVideoOptions {
+  /** Prompt text; supports `@character-username` mentions. */
+  prompt: string;
+  /** Model/concept id. Defaults to the bundled berry-2 concept id. */
+  conceptId?: string;
+  /** Model id (default `berry-2`). */
+  model?: string;
+  /** Architecture name (default `berry`). */
+  architecture?: string;
+  /** Video aspect ratio (default `9:16`). */
+  aspectRatio?: VideoAspectRatio;
+  /** Output resolution (default `480p`). */
+  resolution?: VideoResolution;
+  /** Clip length in seconds as a string (default `"3"`). */
+  duration?: string;
+  /** Random seed (null = random). */
+  seed?: number | null;
+  /** Fast mode (may cost gems). */
+  fastMode?: boolean;
+  /** Characters to inject into the video. */
+  characters?: CharacterRef[];
+  /** Reference assets (same shape as characters; not `@`-mentioned). */
+  references?: CharacterRef[];
+  /** First-frame image URL (text-to-video when omitted). */
+  image?: string;
+  /** Additional reference image URLs. */
+  additionalImages?: string[];
+  /** Override the generation mode (default `unlimited`). */
+  generationMode?: GenerationMode;
+}
+
+/**
+ * Required confirmation for irreversible, destructive operations.
+ *
+ * @remarks
+ * A safety flag so a mass/permanent delete cannot fire by accident. Pass
+ * `{ confirm: true }` to actually execute.
+ */
+export interface ConfirmOptions {
+  confirm: boolean;
 }
 
 export interface WaitOptions {
@@ -212,4 +316,203 @@ export interface ListHistoryOptions {
   offset?: number;
   /** Filter by status; `all` disables the status filter (default `success`). */
   status?: JobStatus | 'all';
+}
+
+// ---------------------------------------------------------------------------
+// Characters & references
+// ---------------------------------------------------------------------------
+
+/** Whether an asset is driven by an image or an audio reference. */
+export type Modality = 'image' | 'audio';
+/** Asset visibility. */
+export type Visibility = 'private' | 'public';
+
+/**
+ * A trained character (or reference asset) as returned by the API.
+ *
+ * @remarks
+ * References share this shape with `variant: "reference"`; characters use
+ * `variant: "character"`.
+ */
+export interface Character {
+  id: string;
+  uid?: string;
+  name: string;
+  username: string;
+  image_url: string;
+  audio_url: string | null;
+  modality?: Modality;
+  description?: string | null;
+  tags?: string[];
+  visibility?: Visibility;
+  moderation?: string[];
+  num_plays_all_time?: number;
+  num_plays_monthly?: number;
+  num_plays_daily?: number;
+  created_at?: string;
+  is_deleted?: boolean;
+  is_featured?: boolean;
+  variant?: string;
+  [key: string]: unknown;
+}
+
+/** A reference asset — structurally identical to {@link Character}. */
+export type Reference = Character;
+
+/** Parsed result of `getMentionSuggestionsParallel`. */
+export interface CharacterSearchResult {
+  characters: Character[];
+  references: Reference[];
+  moodboards: unknown[];
+}
+
+export interface SearchCharactersOptions {
+  /** Search text (matches character name). */
+  query: string;
+  /** Max results (default 10). */
+  limit?: number;
+  /** Include public references in the results (default false). */
+  includePublicReferences?: boolean;
+  /** Reference modalities to include (default `['image', 'audio']`). */
+  referenceModalities?: Modality[];
+}
+
+export interface CreateCharacterInput {
+  /** Display name. */
+  name: string;
+  /** Unique @-mention handle (name + short suffix). */
+  username: string;
+  /** CDN URL from {@link uploadCharacterImage} or an existing character. */
+  image_url: string;
+  /** Voice audio URL (default null). */
+  audio_url?: string | null;
+  /** Optional description (default null). */
+  description?: string | null;
+  /** Category tags (default `[]`). */
+  tags?: string[];
+  /** Visibility (default `private`). */
+  visibility?: Visibility;
+  /** Moderation flags — always `[]` for new characters. */
+  moderation?: string[];
+}
+
+export interface UpdateCharacterInput {
+  name?: string;
+  description?: string | null;
+  tags?: string[];
+  visibility?: Visibility;
+  audio_url?: string | null;
+}
+
+export interface CreateReferenceInput {
+  /** Display name. */
+  name: string;
+  /** Unique handle (name + short suffix). */
+  username: string;
+  /** CDN URL from {@link uploadReferenceImage} (required for image refs). */
+  image_url?: string;
+  /** Audio URL (required for audio refs). */
+  audio_url?: string | null;
+  /** Reference modality (default `image`). */
+  modality?: Modality;
+  /** `reference` for image refs, `audio` for audio refs (default `reference`). */
+  variant?: string;
+  description?: string | null;
+  tags?: string[];
+  visibility?: Visibility;
+  moderation?: string[];
+}
+
+/** Reference asset variants. */
+export type ReferenceVariant = 'reference' | 'object' | 'outfit' | 'pose';
+
+export interface UpdateReferenceInput {
+  name?: string;
+  description?: string | null;
+  tags?: string[];
+  visibility?: Visibility;
+}
+
+/** Ordering for the paginated reference feed. */
+export type ReferenceOrder = 'trending' | 'top' | 'newest' | 'oldest';
+
+export interface ListReferencesOptions {
+  /** Max results per page (default 20). */
+  limit?: number;
+  /** Pagination offset (default 0). */
+  offset?: number;
+  /** Filter by owner uid (omit for the public feed). */
+  uid?: string;
+  /** Filter by visibility. */
+  visibility?: Visibility;
+  /** Sort order (default `top`). */
+  orderBy?: ReferenceOrder;
+  /** Only featured references. */
+  featuredOnly?: boolean;
+  /** Filter by modality (default `image`). */
+  modality?: Modality;
+}
+
+/** A page of references from `getReferencesPaginated`. */
+export interface ReferencePage {
+  references: Reference[];
+  hasMore: boolean;
+}
+
+export interface ListCharactersOptions {
+  /** Max results per page (default 100). */
+  limit?: number;
+  /** Pagination offset (default 0). */
+  offset?: number;
+  /** Filter by owner uid (omit for the public feed). */
+  uid?: string;
+  /** Filter by visibility. */
+  visibility?: Visibility;
+  /** Filter by modality. */
+  modality?: Modality;
+  /** Only featured characters. */
+  featured?: boolean;
+}
+
+/** A page of characters from `getCharactersPaginated`. */
+export interface CharacterPage {
+  characters: Character[];
+  hasMore: boolean;
+}
+
+/** A permanently saved creation (as opposed to transient history). */
+export interface Creation {
+  id: string;
+  uid?: string;
+  /** Permanent CDN URL (not `/temp/30d/`). */
+  url: string;
+  hash?: string;
+  type?: 'image' | 'video';
+  visibility?: Visibility;
+  concept_id?: string;
+  architecture_config?: ArchitectureConfig;
+  metadata?: {
+    seed?: number;
+    width?: number;
+    height?: number;
+    duration?: number;
+    moderation?: { is_nsfw: boolean; is_forbidden: boolean };
+  };
+  created_at?: string;
+  updated_at?: string;
+  tags?: string[];
+  [key: string]: unknown;
+}
+
+/** A page of creations from `getCreationsPaginatedParallel`. */
+export interface CreationPage {
+  creations: Creation[];
+  hasMore: boolean;
+}
+
+export interface ListCreationsOptions {
+  /** Max results (default 10). */
+  limit?: number;
+  /** Pagination offset (default 0). */
+  offset?: number;
 }
