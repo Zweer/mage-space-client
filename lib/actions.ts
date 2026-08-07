@@ -93,6 +93,11 @@ export async function discoverActions(opts: DiscoveryOptions): Promise<ActionSna
         if (!chunkRes.ok) {
           return;
         }
+        // Fallback: CDN-cached page HTML may omit x-deployment-id; chunk responses
+        // are served by the deployment and usually carry it.
+        if (deploymentId === '') {
+          deploymentId = chunkRes.headers.get('x-deployment-id') ?? '';
+        }
         const js = await chunkRes.text();
         for (const match of js.matchAll(CREATE_SERVER_REF_RE)) {
           const hash = match[1];

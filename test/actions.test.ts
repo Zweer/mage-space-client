@@ -63,6 +63,32 @@ describe('discoverActions', () => {
     expect(snapshot.hashes.runArchitecture).toBe('40a1b2');
     expect(snapshot.hashes.deleteReference).toBe('409d73');
   });
+
+  it('falls back to a chunk response for x-deployment-id when the page omits it', async () => {
+    // Arrange — the page HTML carries no x-deployment-id (e.g. CDN-cached).
+    const html = '<script src="/_next/static/chunks/app.js"></script>';
+    const js = '(0,i.createServerReference)("40aaaa",i.c,void 0,i.f,"runArchitecture")';
+    const fetchImpl: FetchLike = async (input) => {
+      if (input.endsWith('/explore')) {
+        return new Response(html);
+      }
+      if (input.endsWith('/_next/static/chunks/app.js')) {
+        return new Response(js, { headers: { 'x-deployment-id': 'dpl_chunk' } });
+      }
+      return new Response('not found', { status: 404 });
+    };
+
+    // Act
+    const snapshot = await discoverActions({
+      fetch: fetchImpl,
+      baseUrl: BASE,
+      discoveryPath: '/explore',
+    });
+
+    // Assert
+    expect(snapshot.deploymentId).toBe('dpl_chunk');
+    expect(snapshot.hashes.runArchitecture).toBe('40aaaa');
+  });
 });
 
 describe('ActionRegistry', () => {
