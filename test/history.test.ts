@@ -144,20 +144,15 @@ describe('MageSpaceClient history', () => {
         }
         if (action === SEED_SNAPSHOT.hashes.saveCreation) {
           saveArgs = (await request.json()) as unknown[];
-          return HttpResponse.text(
-            envelope('{"id":"cr-1","url":"https://cdn3.mage.space/creations/uid-1/image/x.jpg"}'),
-          );
+          return HttpResponse.text(envelope('"$undefined"'));
         }
         return HttpResponse.text('not found', { status: 404 });
       }),
     );
     const client = new MageSpaceClient({ refreshToken: 'rt' });
 
-    // Act
-    const creation = await client.saveCreation(result);
-
-    // Assert
-    expect(creation.id).toBe('cr-1');
+    // Act & Assert — API returns no body; the call resolves and sends [result]
+    await expect(client.saveCreation(result)).resolves.toBeUndefined();
     expect(saveArgs).toEqual([result]);
   });
 });

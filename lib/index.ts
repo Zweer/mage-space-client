@@ -14,6 +14,11 @@ export {
   TimeoutError,
 } from './errors.js';
 export { ReferencesService } from './references.js';
-export { parseFlightRows, parseServerActionResponse, resolveFlightValue } from './rsc.js';
+export {
+  parseFlightRows,
+  parseServerActionResponse,
+  resolveFlightValue,
+  unwrapResult,
+} from './rsc.js';
 export { SEED_SNAPSHOT } from './seed.js';
 export type * from './types.js';

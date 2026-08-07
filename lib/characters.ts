@@ -12,6 +12,7 @@
  */
 import type { AuthManager } from './auth.js';
 import type { HttpClient } from './http.js';
+import { unwrapResult } from './rsc.js';
 import type {
   Character,
   CharacterPage,
@@ -50,7 +51,7 @@ export class CharactersService {
       args: [body],
       session,
     });
-    return data;
+    return unwrapResult<CharacterSearchResult>(data);
   }
 
   /** Create a new character from an already-uploaded image URL. */

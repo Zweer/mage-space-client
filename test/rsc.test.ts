@@ -1,6 +1,38 @@
 import { describe, expect, it } from 'vitest';
 import { RscParseError } from '../lib/errors.js';
-import { parseFlightRows, parseServerActionResponse, resolveFlightValue } from '../lib/rsc.js';
+import {
+  parseFlightRows,
+  parseServerActionResponse,
+  resolveFlightValue,
+  unwrapResult,
+} from '../lib/rsc.js';
+
+describe('unwrapResult', () => {
+  it('unwraps a one-element array (the *Parallel wrap)', () => {
+    expect(unwrapResult({ creations: [], hasMore: false })).toEqual({
+      creations: [],
+      hasMore: false,
+    });
+    expect(unwrapResult([{ creations: [], hasMore: false }])).toEqual({
+      creations: [],
+      hasMore: false,
+    });
+  });
+
+  it('leaves genuine multi-element arrays and non-arrays untouched', () => {
+    expect(unwrapResult([{ id: 'a' }, { id: 'b' }])).toEqual([{ id: 'a' }, { id: 'b' }]);
+    expect(unwrapResult('x')).toBe('x');
+  });
+
+  it('parses a real *Parallel wrapped envelope to the inner object', () => {
+    const text =
+      '0:{"a":"$@1","f":"","b":"b"}\n1:["$@2"]\n2:{"creations":[{"id":"c-1"}],"hasMore":true}\n';
+    const parsed = parseServerActionResponse(text);
+    const page = unwrapResult<{ creations: { id: string }[]; hasMore: boolean }>(parsed);
+    expect(page.creations[0]?.id).toBe('c-1');
+    expect(page.hasMore).toBe(true);
+  });
+});
 
 describe('parseFlightRows', () => {
   it('parses hex-id JSON rows and skips non-JSON rows', () => {
@@ -69,5 +101,28 @@ describe('parseServerActionResponse', () => {
   it('throws RscParseError on an empty response', () => {
     // Act & Assert
     expect(() => parseServerActionResponse('')).toThrow(RscParseError);
+  });
+});
+
+describe('parseFlightRows length-delimited text rows', () => {
+  it('isolates a data row glued directly after a multiline, multibyte text row', () => {
+    // Reproduces the real getHistoryPaginated shape: `2:T7,<7 utf8 bytes>` (an em
+    // dash is 3 bytes, plus an embedded newline) followed IMMEDIATELY — no newline —
+    // by the data row `1:{...}`.
+    const text =
+      '0:{"a":"$@1","f":"","b":"x"}\n' +
+      '2:T7,a—b\nc' +
+      '1:{"histories":[{"id":"h1","architecture_config":{"prompt":"$2"}}],"hasMore":false}\n';
+
+    const parsed = parseServerActionResponse<{
+      histories: { id: string; architecture_config: { prompt: string } }[];
+      hasMore: boolean;
+    }>(text);
+
+    expect(parsed.histories).toHaveLength(1);
+    expect(parsed.histories[0]?.id).toBe('h1');
+    expect(parsed.hasMore).toBe(false);
+    // The `$2` prompt reference resolves to the length-delimited text (with newline).
+    expect(parsed.histories[0]?.architecture_config.prompt).toBe('a—b\nc');
   });
 });

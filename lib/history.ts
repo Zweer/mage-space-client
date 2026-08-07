@@ -2,9 +2,9 @@
 import type { AuthManager } from './auth.js';
 import { requireConfirm } from './errors.js';
 import type { HttpClient } from './http.js';
+import { unwrapResult } from './rsc.js';
 import type {
   ConfirmOptions,
-  Creation,
   CreationPage,
   GenerationResult,
   HistoryPage,
@@ -38,7 +38,7 @@ export class HistoryService {
       args: [uid, limit, offset, filters],
       session,
     });
-    return data;
+    return unwrapResult<HistoryPage>(data);
   }
 
   /** List the user's permanently saved creations. */
@@ -52,23 +52,24 @@ export class HistoryService {
       args: [uid, limit, offset],
       session,
     });
-    return data;
+    return unwrapResult<CreationPage>(data);
   }
 
   /**
    * Save a completed generation result as a permanent creation.
    *
    * @param result - the `result` object of a completed history item.
+   * @remarks The API returns no body; call {@link listCreations} to retrieve the
+   * saved creation.
    */
-  async saveCreation(result: GenerationResult): Promise<Creation> {
+  async saveCreation(result: GenerationResult): Promise<void> {
     const session = await this.auth.getSession();
-    const { data } = await this.http.callAction<Creation>({
+    await this.http.callAction({
       action: 'saveCreation',
       path: HISTORY_PATH,
       args: [result],
       session,
     });
-    return data;
   }
 
   /**

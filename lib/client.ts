@@ -13,7 +13,6 @@ import { SEED_SNAPSHOT } from './seed.js';
 import type {
   ActionSnapshot,
   ConfirmOptions,
-  Creation,
   CreationPage,
   FetchLike,
   GenerateOptions,
@@ -103,7 +102,7 @@ export class MageSpaceClient {
   }
 
   /** Save a completed generation result as a permanent creation. */
-  saveCreation(result: GenerationResult): Promise<Creation> {
+  saveCreation(result: GenerationResult): Promise<void> {
     return this.historyService.saveCreation(result);
   }
 
