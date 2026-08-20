@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.0.2](https://github.com/Zweer/mage-space-client/compare/v1.0.1...v1.0.2) (2026-08-20)
+
+
+### Bug Fixes
+
+* 🐛 detect HTML fallback as stale hash (auto-rediscover on deploy) ([1fa93e7](https://github.com/Zweer/mage-space-client/commit/1fa93e794e81e247087b6118e5aebe4419bc931b))
+
 ## [1.0.1](https://github.com/Zweer/mage-space-client/compare/v1.0.0...v1.0.1) (2026-08-07)
 
 
