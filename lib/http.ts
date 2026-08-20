@@ -65,8 +65,13 @@ export class HttpClient {
       body: JSON.stringify(params.args),
     });
 
-    // A stale (post-deploy) hash surfaces as a 404: rediscover and retry once.
-    if (res.status === 404 && !retried) {
+    // A stale (post-deploy) hash surfaces as a 404 OR as a 200 with HTML
+    // (Next.js returns the page shell instead of the RSC action response).
+    const contentType = res.headers.get('content-type') ?? '';
+    const isHtmlFallback = res.ok && contentType.includes('text/html');
+    if ((res.status === 404 || isHtmlFallback) && !retried) {
+      // Consume the body to prevent socket leaks.
+      await safeText(res);
       await this.registry.invalidate();
       return this.callAction<T>(params, true);
     }
