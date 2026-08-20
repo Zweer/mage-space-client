@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.0.3](https://github.com/Zweer/mage-space-client/compare/v1.0.2...v1.0.3) (2026-08-20)
+
+
+### Bug Fixes
+
+* 🐛 resolve $D Date sentinels in RSC parser ([a35a2bf](https://github.com/Zweer/mage-space-client/commit/a35a2bf04230110baec8c160592946a8ffa0e2b5))
+
 ## [1.0.2](https://github.com/Zweer/mage-space-client/compare/v1.0.1...v1.0.2) (2026-08-20)
 
 
