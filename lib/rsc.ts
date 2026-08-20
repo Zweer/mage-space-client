@@ -141,6 +141,10 @@ export function resolveFlightValue(
     if (value.startsWith('$$')) {
       return value.slice(1);
     }
+    // $D<iso> → Date object (React Flight Date sentinel).
+    if (value.startsWith('$D')) {
+      return new Date(value.slice(2));
+    }
     // Other `$`-prefixed markers are kept verbatim.
     return value;
   }
