@@ -130,4 +130,9 @@ export class MageSpaceClient {
   refreshActions(): Promise<ActionSnapshot> {
     return this.registry.refresh();
   }
+
+  /** Return the authenticated user's Firebase uid. */
+  getUid(): Promise<string> {
+    return this.auth.getUserId();
+  }
 }
