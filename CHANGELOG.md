@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.1.0](https://github.com/Zweer/mage-space-client/compare/v1.0.3...v1.1.0) (2026-08-21)
+
+
+### Features
+
+* ✨ expose getUid() on MageSpaceClient ([4530f88](https://github.com/Zweer/mage-space-client/commit/4530f88a20590e01ffc7c614497be47aca21494c))
+
 ## [1.0.3](https://github.com/Zweer/mage-space-client/compare/v1.0.2...v1.0.3) (2026-08-20)
 
 
