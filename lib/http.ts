@@ -15,6 +15,15 @@ const DEFAULT_USER_AGENT =
   'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 ' +
   '(KHTML, like Gecko) Chrome/125.0.0.0 Safari/537.36';
 
+/**
+ * Known RSC error digests mapped to human-readable messages.
+ * Discovered via reverse engineering; the server does not expose error details.
+ */
+const KNOWN_DIGESTS: Record<string, string> = {
+  '709776019': 'Username already taken (duplicate character/reference username)',
+  '1853426377': 'Username already taken (duplicate character/reference username)',
+};
+
 export interface CallActionParams {
   /** Server Action function name (resolved to a hash via the registry). */
   action: string;
@@ -77,8 +86,13 @@ export class HttpClient {
     }
     if (!res.ok) {
       const body = await safeText(res);
-      const suffix = body.length > 0 ? ` — ${body.slice(0, 200)}` : '';
-      throw new MageSpaceError(`Action "${params.action}" failed: HTTP ${res.status}${suffix}`);
+      // RSC error rows look like: `1:E{"digest":"..."}` — extract the digest when possible.
+      const rscErrorMatch = body.match(/E\{"digest":"([^"]+)"\}/);
+      const digest = rscErrorMatch?.[1];
+      const knownDigest = digest !== undefined ? KNOWN_DIGESTS[digest] : undefined;
+      const hint = knownDigest ? ` — ${knownDigest}` : digest ? ` (server digest: ${digest})` : '';
+      const raw = body.length > 0 ? ` — ${body.slice(0, 200)}` : '';
+      throw new MageSpaceError(`Action "${params.action}" failed: HTTP ${res.status}${hint}${raw}`);
     }
 
     const text = await res.text();
