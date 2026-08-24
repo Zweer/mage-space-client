@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.1.1](https://github.com/Zweer/mage-space-client/compare/v1.1.0...v1.1.1) (2026-08-24)
+
+
+### Bug Fixes
+
+* **actions:** :bug: update seed snapshot for new mage.space deploy ([53af7fc](https://github.com/Zweer/mage-space-client/commit/53af7fc73344fed2a4fd6ef140894a7341ae6de5))
+
 ## [1.1.0](https://github.com/Zweer/mage-space-client/compare/v1.0.3...v1.1.0) (2026-08-21)
 
 
