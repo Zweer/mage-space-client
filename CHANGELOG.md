@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.1.2](https://github.com/Zweer/mage-space-client/compare/v1.1.1...v1.1.2) (2026-08-24)
+
+
+### Bug Fixes
+
+* **http:** :bug: detect duplicate username errors from RSC 500 responses ([0622fcf](https://github.com/Zweer/mage-space-client/commit/0622fcf66809c29793830860d8776fd373be4acf))
+
 ## [1.1.1](https://github.com/Zweer/mage-space-client/compare/v1.1.0...v1.1.1) (2026-08-24)
 
 
