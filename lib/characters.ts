@@ -11,6 +11,7 @@
  * posted to the `/explore` page where their bundles are loaded.
  */
 import type { AuthManager } from './auth.js';
+import { MageSpaceError } from './errors.js';
 import type { HttpClient } from './http.js';
 import { unwrapResult } from './rsc.js';
 import type {
@@ -28,6 +29,47 @@ import type {
 /** Character actions are served from the `/explore` page. */
 const CHARACTERS_PATH = '/explore';
 const DEFAULT_SEARCH_LIMIT = 10;
+
+/** Server-enforced username constraints (from module 64428). */
+const USERNAME_MIN = 1;
+const USERNAME_MAX = 15;
+const USERNAME_RE = /^[a-z][a-z0-9_-]*$/;
+
+/**
+ * Generate a username from a display name, matching the web UI logic:
+ * lowercase, strip special chars, append a 4-char random suffix, truncate to 15.
+ */
+function generateUsername(name: string): string {
+  const suffix = Math.random().toString(36).substring(2, 6);
+  const base = name
+    .toLowerCase()
+    .trim()
+    .replace(/[^a-z0-9\s]/g, '')
+    .replace(/\s+/g, '-')
+    .replace(/-+/g, '-')
+    .replace(/^-|-$/g, '');
+  // Ensure the random suffix always fits: base is truncated to leave room for `-xxxx`.
+  const maxBase = USERNAME_MAX - suffix.length - 1; // 1 for the dash separator
+  const trimmedBase = base.slice(0, maxBase).replace(/[-_]+$/, '');
+  return `${trimmedBase}-${suffix}`;
+}
+
+/** Validate a username and throw early with a clear message instead of a server 500. */
+function validateUsername(username: string): void {
+  if (username.length < USERNAME_MIN) {
+    throw new MageSpaceError('Username is required (min 1 character)');
+  }
+  if (username.length > USERNAME_MAX) {
+    throw new MageSpaceError(
+      `Username "${username}" is too long (${username.length} chars, max ${USERNAME_MAX})`,
+    );
+  }
+  if (!USERNAME_RE.test(username)) {
+    throw new MageSpaceError(
+      `Username "${username}" is invalid: must start with a lowercase letter and contain only a-z, 0-9, _ or -`,
+    );
+  }
+}
 
 export class CharactersService {
   constructor(
@@ -56,10 +98,12 @@ export class CharactersService {
 
   /** Create a new character from an already-uploaded image URL. */
   async create(input: CreateCharacterInput): Promise<Character> {
+    const username = input.username ?? generateUsername(input.name);
+    validateUsername(username);
     const session = await this.auth.getSession();
     const body = {
       name: input.name,
-      username: input.username,
+      username,
       image_url: input.image_url,
       audio_url: input.audio_url ?? null,
       description: input.description ?? null,

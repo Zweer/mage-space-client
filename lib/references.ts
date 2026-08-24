@@ -7,7 +7,7 @@
  * public feed) per `docs/api/references.md`.
  */
 import type { AuthManager } from './auth.js';
-import { requireConfirm } from './errors.js';
+import { MageSpaceError, requireConfirm } from './errors.js';
 import type { HttpClient } from './http.js';
 import type {
   ConfirmOptions,
@@ -18,6 +18,38 @@ import type {
   ReferencePage,
   UpdateReferenceInput,
 } from './types.js';
+
+/** Server-enforced username constraints (shared with characters, module 64428). */
+const USERNAME_MAX = 15;
+const USERNAME_RE = /^[a-z][a-z0-9_-]*$/;
+
+/** Generate a username from a display name (same logic as characters). */
+function generateUsername(name: string): string {
+  const suffix = Math.random().toString(36).substring(2, 6);
+  const base = name
+    .toLowerCase()
+    .trim()
+    .replace(/[^a-z0-9\s]/g, '')
+    .replace(/\s+/g, '-')
+    .replace(/-+/g, '-')
+    .replace(/^-|-$/g, '');
+  const maxBase = USERNAME_MAX - suffix.length - 1;
+  const trimmedBase = base.slice(0, maxBase).replace(/[-_]+$/, '');
+  return `${trimmedBase}-${suffix}`;
+}
+
+function validateUsername(username: string): void {
+  if (username.length > USERNAME_MAX) {
+    throw new MageSpaceError(
+      `Username "${username}" is too long (${username.length} chars, max ${USERNAME_MAX})`,
+    );
+  }
+  if (!USERNAME_RE.test(username)) {
+    throw new MageSpaceError(
+      `Username "${username}" is invalid: must start with a lowercase letter and contain only a-z, 0-9, _ or -`,
+    );
+  }
+}
 
 /** Reference actions are served from the `/explore` page. */
 const REFERENCES_PATH = '/explore';
@@ -47,10 +79,12 @@ export class ReferencesService {
 
   /** Create a reusable reference from an uploaded image/audio URL. */
   async create(input: CreateReferenceInput): Promise<Reference> {
+    const username = input.username ?? generateUsername(input.name);
+    validateUsername(username);
     const session = await this.auth.getSession();
     const body = {
       name: input.name,
-      username: input.username,
+      username,
       image_url: input.image_url,
       audio_url: input.audio_url ?? null,
       modality: input.modality ?? 'image',

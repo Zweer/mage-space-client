@@ -133,6 +133,54 @@ describe('MageSpaceClient references', () => {
     await expect(client.references.delete('r-9')).rejects.toThrow(/confirm/i);
   });
 
+  it('creates a reference with auto-generated username when not provided', async () => {
+    // Arrange
+    let sentBody: unknown;
+    server.use(
+      tokenHandler,
+      sessionHandler,
+      http.post(`${BASE}/explore`, async ({ request }) => {
+        if (request.headers.get('next-action') !== SEED_SNAPSHOT.hashes.createReference) {
+          return HttpResponse.text('not found', { status: 404 });
+        }
+        sentBody = await request.json();
+        return HttpResponse.text(
+          envelope(
+            '{"id":"r-new","name":"Sunflower Dress","username":"sunflower-d-a1b2","variant":"outfit"}',
+          ),
+        );
+      }),
+    );
+    const client = new MageSpaceClient({ refreshToken: 'rt' });
+
+    // Act
+    const ref = await client.references.create({
+      name: 'Sunflower Dress',
+      image_url: 'https://cdn/dress.jpg',
+      variant: 'outfit',
+    });
+
+    // Assert
+    expect(ref.id).toBe('r-new');
+    const args = sentBody as [{ username: string }];
+    const username = args[0].username;
+    expect(username.length).toBeLessThanOrEqual(15);
+    expect(username).toMatch(/^[a-z][a-z0-9_-]*$/);
+    expect(username).toMatch(/^sunflower-/);
+  });
+
+  it('rejects a reference username that exceeds 15 chars', async () => {
+    const client = new MageSpaceClient({ refreshToken: 'rt' });
+
+    await expect(
+      client.references.create({
+        name: 'test',
+        username: 'waytoolongusername',
+        image_url: 'https://cdn/x.jpg',
+      }),
+    ).rejects.toThrow(/too long/);
+  });
+
   it('deletes a reference when confirmed', async () => {
     // Arrange
     let sentArgs: unknown;

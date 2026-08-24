@@ -21,7 +21,8 @@ const DEFAULT_USER_AGENT =
  */
 const KNOWN_DIGESTS: Record<string, string> = {
   '709776019': 'Username already taken (duplicate character/reference username)',
-  '1853426377': 'Username already taken (duplicate character/reference username)',
+  '1853426377':
+    'Invalid username (must be 1–15 lowercase chars, start with a letter, only a-z 0-9 _ -)',
 };
 
 export interface CallActionParams {

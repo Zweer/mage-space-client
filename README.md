@@ -98,7 +98,17 @@ console.log(video.result?.data.video);
 ```typescript
 // upload an image, then create a character from it
 const imageUrl = await client.characters.uploadImage(dataUrl); // data:image/jpeg;base64,...
+
+// username is optional — auto-generated from the name if omitted (max 15 chars)
 const character = await client.characters.create({
+  name: 'my-character',
+  image_url: imageUrl,
+  tags: ['realistic'],
+});
+// character.username → "my-character-x7z" (auto-generated)
+
+// or provide an explicit username (must be 1–15 chars, lowercase a-z/0-9/_/-)
+const character2 = await client.characters.create({
   name: 'my-character',
   username: 'mychar-abcd',
   image_url: imageUrl,
@@ -120,10 +130,10 @@ await client.characters.delete(character.id);
 const refUrl = await client.references.uploadImage(dataUrl);
 const reference = await client.references.create({
   name: 'sunflower-dress',
-  username: 'sunflowerdress-abcd',
   image_url: refUrl,
   variant: 'outfit', // 'reference' | 'object' | 'outfit' | 'pose'
 });
+// reference.username → auto-generated, e.g. "sunflower-d-k3m9"
 
 const mine = await client.references.list('image');
 const feed = await client.references.listPaginated({ featuredOnly: true, orderBy: 'top' });

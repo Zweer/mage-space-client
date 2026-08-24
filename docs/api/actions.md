@@ -37,7 +37,7 @@ Action hashes are embedded in the JavaScript bundles as `createServerReference()
 | `2703-18e4ea83025a5359.js` | Models, concepts, formulas |
 | `8110-4a73cac11473d10c.js` | History pagination, save creation, clear history |
 
-## Complete Action Registry (2026-08-07)
+## Complete Action Registry (2026-08-24)
 
 ### Generation
 

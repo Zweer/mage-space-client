@@ -105,6 +105,79 @@ describe('MageSpaceClient characters', () => {
     expect(character.visibility).toBe('private');
   });
 
+  it('auto-generates a valid username when not provided', async () => {
+    // Arrange
+    let sentBody: unknown;
+    server.use(
+      tokenHandler,
+      sessionHandler,
+      http.post(`${BASE}/explore`, async ({ request }) => {
+        if (request.headers.get('next-action') !== SEED_SNAPSHOT.hashes.createCharacter) {
+          return HttpResponse.text('not found', { status: 404 });
+        }
+        sentBody = await request.json();
+        return HttpResponse.text(
+          envelope(
+            '{"id":"new-2","name":"My Cool Character","username":"my-cool-ch-x7z2","image_url":"https://cdn/y.jpg","audio_url":null,"visibility":"private"}',
+          ),
+        );
+      }),
+    );
+    const client = new MageSpaceClient({ refreshToken: 'rt' });
+
+    // Act
+    const character = await client.characters.create({
+      name: 'My Cool Character',
+      image_url: 'https://cdn/y.jpg',
+    });
+
+    // Assert — the sent body should contain an auto-generated username ≤15 chars
+    expect(character.id).toBe('new-2');
+    const args = sentBody as [{ username: string }];
+    const username = args[0].username;
+    expect(username.length).toBeLessThanOrEqual(15);
+    expect(username.length).toBeGreaterThanOrEqual(1);
+    expect(username).toMatch(/^[a-z][a-z0-9_-]*$/);
+    // Should derive from the name and include a random suffix
+    expect(username).toMatch(/^my-cool-ch.*-[a-z0-9]+$/);
+  });
+
+  it('rejects a username that is too long (max 15 chars)', async () => {
+    const client = new MageSpaceClient({ refreshToken: 'rt' });
+
+    await expect(
+      client.characters.create({
+        name: 'test',
+        username: 'thisusernameiswaytoolong',
+        image_url: 'https://cdn/y.jpg',
+      }),
+    ).rejects.toThrow(/too long.*24 chars.*max 15/);
+  });
+
+  it('rejects a username with invalid characters', async () => {
+    const client = new MageSpaceClient({ refreshToken: 'rt' });
+
+    await expect(
+      client.characters.create({
+        name: 'test',
+        username: 'MyChar-123',
+        image_url: 'https://cdn/y.jpg',
+      }),
+    ).rejects.toThrow(/invalid.*must start with a lowercase/);
+  });
+
+  it('rejects a username starting with a number', async () => {
+    const client = new MageSpaceClient({ refreshToken: 'rt' });
+
+    await expect(
+      client.characters.create({
+        name: 'test',
+        username: '123abc',
+        image_url: 'https://cdn/y.jpg',
+      }),
+    ).rejects.toThrow(/invalid/);
+  });
+
   it('uploads a character image and returns the CDN URL', async () => {
     // Arrange
     let sentArgs: unknown;

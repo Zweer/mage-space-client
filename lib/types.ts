@@ -384,8 +384,15 @@ export interface SearchCharactersOptions {
 export interface CreateCharacterInput {
   /** Display name. */
   name: string;
-  /** Unique @-mention handle (name + short suffix). */
-  username: string;
+  /**
+   * Unique @-mention handle. Max 15 chars, lowercase `a-z`, `0-9`, `_`, `-`,
+   * must start with a letter.
+   *
+   * @remarks
+   * When omitted, one is auto-generated from `name` with a 4-char random suffix
+   * (matching the web UI behavior), truncated to 15 chars.
+   */
+  username?: string;
   /** CDN URL from {@link uploadCharacterImage} or an existing character. */
   image_url: string;
   /** Voice audio URL (default null). */
@@ -411,8 +418,11 @@ export interface UpdateCharacterInput {
 export interface CreateReferenceInput {
   /** Display name. */
   name: string;
-  /** Unique handle (name + short suffix). */
-  username: string;
+  /**
+   * Unique handle. Max 15 chars, lowercase `a-z`, `0-9`, `_`, `-`, starts with a letter.
+   * When omitted, auto-generated from `name` with a 4-char random suffix.
+   */
+  username?: string;
   /** CDN URL from {@link uploadReferenceImage} (required for image refs). */
   image_url?: string;
   /** Audio URL (required for audio refs). */
