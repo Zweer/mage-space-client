@@ -6,8 +6,8 @@ Mage.space uses Next.js Server Actions. Each action is identified by a hex hash 
 
 ## Current Deployment
 
-- **Deployment ID:** `dpl_GLUqzVNVADQR5wogKksDvu1m3BdH`
-- **Discovered:** 2026-08-07
+- **Deployment ID:** `dpl_2w2igPYTRJKeDaX6iAUMbGwDEWZC`
+- **Discovered:** 2026-08-24
 
 ## Discovery Method
 

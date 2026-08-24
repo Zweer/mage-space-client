@@ -402,7 +402,7 @@ When `uid` is omitted or options is `{}`, returns public/featured characters glo
 
 Before creating a character, the reference image must be uploaded:
 
-1. Resize/compress the image client-side (max 904px, fixed 512px, JPEG quality 1.0)
+1. Resize/compress the image client-side (max 1816px, fixed 1024px, JPEG quality 1.0)
 2. Convert to data URL: `data:image/jpeg;base64,...`
 3. Call `uploadCharacterImage(dataUrl, uid)` → returns CDN URL
 4. Use the resulting CDN URL as `image_url` in `createCharacter`

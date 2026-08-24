@@ -162,7 +162,7 @@ describe.skipIf(!ENABLED)('e2e: full lifecycle (live API)', () => {
     } catch {
       // ignore — covered by unit tests; not all characters can be published
     }
-  });
+  }, 30_000);
 
   it('creates, updates, lists and deletes a reference', async () => {
     const ref = await client.references.create({
