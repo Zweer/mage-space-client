@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.2.0](https://github.com/Zweer/mage-space-client/compare/v1.1.2...v1.2.0) (2026-08-24)
+
+
+### Features
+
+* **characters:** :sparkles: auto-generate username when not provided ([c84f565](https://github.com/Zweer/mage-space-client/commit/c84f5655b4a88c3c34a5163ed810b40488eb8cf3))
+
 ## [1.1.2](https://github.com/Zweer/mage-space-client/compare/v1.1.1...v1.1.2) (2026-08-24)
 
 
