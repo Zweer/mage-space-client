@@ -144,3 +144,6 @@ vite.config.ts.timestamp-*
 
 # Playwright MCP browser session artifacts
 .playwright-mcp/
+
+# Workflow agent task artifacts (plans, reviews, investigation reports)
+.agents/
