@@ -134,9 +134,18 @@ export function resolveFlightValue(
       if (refId === undefined || seen.has(refId)) {
         return undefined;
       }
-      seen.add(refId);
       const target = rows.get(refId);
-      return target === undefined ? undefined : resolveFlightValue(target, rows, seen);
+      if (target === undefined) {
+        return undefined;
+      }
+      // Scope the cycle guard to the current depth-first path: descend with a
+      // fresh copy that records this ref. Siblings keep the unmutated `seen`, so
+      // a DAG (many siblings pointing at one shared row) resolves on every sibling,
+      // while a true cycle (a refId already on this ancestor path) still returns
+      // undefined.
+      const nextSeen = new Set(seen);
+      nextSeen.add(refId);
+      return resolveFlightValue(target, rows, nextSeen);
     }
     if (value.startsWith('$$')) {
       return value.slice(1);

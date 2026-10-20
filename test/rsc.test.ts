@@ -72,6 +72,37 @@ describe('resolveFlightValue', () => {
     // Assert
     expect(resolved.self).toBeUndefined();
   });
+
+  it('resolves a shared reference across sibling items (DAG, not a cycle)', () => {
+    // Arrange
+    const shared = { created_at: '2026-01-01T00:00:00.000Z' };
+    const rows = new Map<string, unknown>([['5', shared]]);
+
+    // Act
+    const resolved = resolveFlightValue([{ d: '$@5' }, { d: '$@5' }], rows) as {
+      d?: { created_at?: string };
+    }[];
+
+    // Assert — both siblings must resolve the shared row, not just the first.
+    expect(resolved[0]?.d?.created_at).toBe('2026-01-01T00:00:00.000Z');
+    expect(resolved[1]?.d?.created_at).toBe('2026-01-01T00:00:00.000Z');
+  });
+
+  it('blocks a genuine a -> b -> a reference cycle without infinite loop', () => {
+    // Arrange
+    const rows = new Map<string, unknown>([
+      ['1', { next: '$@2' }],
+      ['2', { back: '$@1' }],
+    ]);
+
+    // Act
+    const resolved = resolveFlightValue('$@1', rows) as {
+      next?: { back?: unknown };
+    };
+
+    // Assert — the back-reference closes the cycle and resolves to undefined.
+    expect(resolved.next?.back).toBeUndefined();
+  });
 });
 
 describe('parseServerActionResponse', () => {
