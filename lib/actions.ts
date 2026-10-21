@@ -208,7 +208,7 @@ export class ActionRegistry {
       hash = snapshot.hashes[action];
     }
     if (hash === undefined) {
-      throw new DiscoveryError(`Action "${action}" not found after discovery`);
+      throw new DiscoveryError(`Action "${action}" not found after discovery`, { notFound: true });
     }
     return { hash, deploymentId: snapshot.deploymentId };
   }

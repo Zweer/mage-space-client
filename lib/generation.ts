@@ -5,6 +5,13 @@
 import type { AuthManager } from './auth.js';
 import { GenerationError, TimeoutError } from './errors.js';
 import type { HttpClient } from './http.js';
+import { unwrapResult } from './rsc.js';
+import {
+  PAGINATED_POLL_MAX_PAGES,
+  PAGINATED_POLL_PAGE_SIZE,
+  resolveActionName,
+  type Target,
+} from './targets.js';
 import type {
   ArchitectureConfig,
   CharacterRef,
@@ -12,12 +19,15 @@ import type {
   GenerateVideoOptions,
   GenerationMode,
   HistoryItem,
+  HistoryPage,
   VideoArchitectureConfig,
   WaitOptions,
 } from './types.js';
 
 /** Generation actions are served from the `/explore` page. */
 const GENERATION_PATH = '/explore';
+/** Mirrors HistoryService.HISTORY_PATH ('/creations'); kept local to avoid coupling the two services. */
+const HISTORY_PATH = '/creations';
 /** RSC sentinel for an absent value. */
 const UNDEFINED = '$undefined';
 /** Default concept id for mango-v3-pro (from docs — verify per model via rev-eng). */
@@ -29,10 +39,18 @@ const DEFAULT_POLL_INTERVAL_MS = 4000;
 const DEFAULT_TIMEOUT_MS = 5 * 60 * 1000;
 
 export class GenerationService {
+  /** Single-status-read primitive; overridable so the client can make it fallback-aware. */
+  private readonly pollOnce: (historyId: string) => Promise<HistoryItem>;
+
   constructor(
     private readonly http: HttpClient,
     private readonly auth: AuthManager,
-  ) {}
+    private readonly target: Target,
+    pollOnce?: (historyId: string) => Promise<HistoryItem>,
+  ) {
+    // Arrow captures `this` lazily so the default works regardless of field-init order.
+    this.pollOnce = pollOnce ?? ((id) => this.getHistory(id));
+  }
 
   /** Submit an image generation job and return its `historyId`. */
   async submit(opts: GenerateOptions): Promise<{ historyId: string }> {
@@ -101,7 +119,7 @@ export class GenerationService {
     ];
 
     const { data } = await this.http.callAction<Record<string, unknown>>({
-      action: 'runArchitecture',
+      action: resolveActionName(this.target, 'submitGeneration'),
       path: GENERATION_PATH,
       args,
       session,
@@ -118,11 +136,14 @@ export class GenerationService {
     return { historyId };
   }
 
-  /** Fetch a single history record by id. */
+  /** Fetch a single history record by id, dispatching on the target's poll strategy. */
   async getHistory(historyId: string): Promise<HistoryItem> {
+    if (this.target.pollStrategy === 'paginated') {
+      return this.getHistoryPaginated(historyId);
+    }
     const session = await this.auth.getSession();
     const { data } = await this.http.callAction<HistoryItem>({
-      action: 'getHistoryById',
+      action: resolveActionName(this.target, 'getHistoryById'),
       path: GENERATION_PATH,
       args: [historyId],
       session,
@@ -130,11 +151,60 @@ export class GenerationService {
     return data;
   }
 
+  /**
+   * Beta status read: `getHistoryById` is absent, so page `getHistoryPaginated`
+   * and find the item whose `id === historyId`.
+   *
+   * @remarks
+   * ASSUMED (pending docs/api/beta): each page window is swept in two phases —
+   * `running` first, then the raw `$undefined` sentinel (terminal items) — since
+   * which filter surfaces a running job on beta is not yet documented. Bounded by
+   * {@link PAGINATED_POLL_MAX_PAGES} pages of {@link PAGINATED_POLL_PAGE_SIZE}.
+   */
+  private async getHistoryPaginated(historyId: string): Promise<HistoryItem> {
+    const uid = await this.auth.getUserId();
+    const limit = PAGINATED_POLL_PAGE_SIZE;
+    let offset = 0;
+    for (let pageIndex = 0; pageIndex < PAGINATED_POLL_MAX_PAGES; pageIndex += 1) {
+      // Phase 1: running jobs; Phase 2: terminal (no status filter).
+      for (const status of ['running', UNDEFINED]) {
+        const page = await this.fetchHistoryPage(uid, status, limit, offset);
+        const found = page.histories.find((h) => h.id === historyId);
+        if (found !== undefined) {
+          return found;
+        }
+        if (status === UNDEFINED && !page.hasMore) {
+          throw new GenerationError(`history ${historyId} not found on beta`);
+        }
+      }
+      offset += limit;
+    }
+    throw new GenerationError(`history ${historyId} not found on beta`);
+  }
+
+  /** Fetch one page of history via `listHistory` (resolved per target) on `/creations`. */
+  private async fetchHistoryPage(
+    uid: string,
+    status: string,
+    limit: number,
+    offset: number,
+  ): Promise<HistoryPage> {
+    const session = await this.auth.getSession();
+    const filters = { status, type: UNDEFINED };
+    const { data } = await this.http.callAction<HistoryPage>({
+      action: resolveActionName(this.target, 'listHistory'),
+      path: HISTORY_PATH,
+      args: [uid, limit, offset, filters],
+      session,
+    });
+    return unwrapResult<HistoryPage>(data);
+  }
+
   /** Cancel a running generation job. */
   async cancelJob(historyId: string): Promise<void> {
     const session = await this.auth.getSession();
     await this.http.callAction({
-      action: 'cancelArchitectureJob',
+      action: resolveActionName(this.target, 'cancelJob'),
       path: GENERATION_PATH,
       args: [historyId],
       session,
@@ -151,7 +221,7 @@ export class GenerationService {
       if (opts.signal?.aborted === true) {
         throw new TimeoutError('waitForResult was aborted');
       }
-      const item = await this.getHistory(historyId);
+      const item = await this.pollOnce(historyId);
       if (item.status === 'success') {
         return item;
       }

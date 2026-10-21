@@ -7,13 +7,20 @@
  * invalidated and the call is retried once against freshly discovered hashes.
  */
 import type { ActionRegistry } from './actions.js';
-import { MageSpaceError } from './errors.js';
+import { ActionUnavailableError, MageSpaceError } from './errors.js';
 import { parseServerActionResponse } from './rsc.js';
 import type { FetchLike } from './types.js';
 
 const DEFAULT_USER_AGENT =
   'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 ' +
   '(KHTML, like Gecko) Chrome/125.0.0.0 Safari/537.36';
+
+/**
+ * HTTP statuses that mean "this action is unavailable on this host". Kept as a
+ * set so a status (e.g. a confirmed 409) can be added as a one-line change once
+ * captured in `docs/api/beta/`.
+ */
+const UNAVAILABLE_STATUSES = new Set([404]);
 
 /**
  * Known RSC error digests mapped to human-readable messages.
@@ -47,8 +54,16 @@ export class HttpClient {
     private readonly registry: ActionRegistry,
     private readonly fetchImpl: FetchLike,
     private readonly baseUrl: string,
+    private readonly targetKey: string,
     private readonly userAgent: string = DEFAULT_USER_AGENT,
   ) {}
+
+  /** A response that means the action is unavailable (stale hash or gone). */
+  private isUnavailable(res: Response): boolean {
+    const contentType = res.headers.get('content-type') ?? '';
+    const isHtmlFallback = res.ok && contentType.includes('text/html');
+    return UNAVAILABLE_STATUSES.has(res.status) || isHtmlFallback;
+  }
 
   async callAction<T = unknown>(
     params: CallActionParams,
@@ -77,13 +92,18 @@ export class HttpClient {
 
     // A stale (post-deploy) hash surfaces as a 404 OR as a 200 with HTML
     // (Next.js returns the page shell instead of the RSC action response).
-    const contentType = res.headers.get('content-type') ?? '';
-    const isHtmlFallback = res.ok && contentType.includes('text/html');
-    if ((res.status === 404 || isHtmlFallback) && !retried) {
+    if (this.isUnavailable(res) && !retried) {
       // Consume the body to prevent socket leaks.
       await safeText(res);
       await this.registry.invalidate();
       return this.callAction<T>(params, true);
+    }
+    // A retried response that is still unavailable means the action is gone from
+    // this host — a definitive, host-level signal the client treats as a
+    // fallback trigger (distinct from a transient stale hash).
+    if (this.isUnavailable(res)) {
+      await safeText(res);
+      throw new ActionUnavailableError(params.action, this.targetKey);
     }
     if (!res.ok) {
       const body = await safeText(res);

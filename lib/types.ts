@@ -6,6 +6,8 @@
  * the request/response shapes reverse-engineered in `docs/api/*.md`.
  */
 
+import type { Target, TargetKey } from './targets.js';
+
 /** Minimal `fetch` signature the client depends on (injectable for tests). */
 export type FetchLike = (input: string, init?: RequestInit) => Promise<Response>;
 
@@ -63,6 +65,7 @@ export type ActionName =
   | 'getReferencesPaginated'
   | 'getCharactersPaginated'
   | 'getCreationsPaginatedParallel'
+  | 'getCreationsPaginated'
   | 'deleteHistory'
   | 'deleteManyHistories'
   | 'deleteCreation'
@@ -194,6 +197,22 @@ export interface MageSpaceClientOptions {
   baseUrl?: string;
   /** Override the Firebase Web API key. */
   firebaseApiKey?: string;
+  /**
+   * Host-fallback behaviour. Default: production first, with an automatic,
+   * sticky fallback to beta when production can no longer serve a required
+   * action. Cannot be combined with `baseUrl` (which pins a single host).
+   */
+  fallback?: FallbackOptions;
+}
+
+/** Configuration for the automatic beta-portal fallback. */
+export interface FallbackOptions {
+  /** Host to start on. Default `'production'`. `'beta'` forces beta from the first call. */
+  start?: TargetKey;
+  /** Auto-advance to the next target on a definitive action-unavailable signal. Default `true`. */
+  auto?: boolean;
+  /** Override the ordered target chain. Advanced/testing. Default `DEFAULT_TARGET_CHAIN`. */
+  chain?: readonly Target[];
 }
 
 export interface GenerateOptions {

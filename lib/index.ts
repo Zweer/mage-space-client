@@ -5,6 +5,7 @@ export { ActionRegistry, discoverActions, InMemoryActionCache } from './actions.
 export { CharactersService } from './characters.js';
 export { MageSpaceClient } from './client.js';
 export {
+  ActionUnavailableError,
   AuthError,
   DiscoveryError,
   GenerationError,
@@ -21,4 +22,11 @@ export {
   unwrapResult,
 } from './rsc.js';
 export { SEED_SNAPSHOT } from './seed.js';
+export type { LogicalAction, PollStrategy, Target, TargetKey } from './targets.js';
+export {
+  BETA_TARGET,
+  DEFAULT_TARGET_CHAIN,
+  PRODUCTION_TARGET,
+  resolveActionName,
+} from './targets.js';
 export type * from './types.js';

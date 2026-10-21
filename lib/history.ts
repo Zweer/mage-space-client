@@ -3,6 +3,7 @@ import type { AuthManager } from './auth.js';
 import { requireConfirm } from './errors.js';
 import type { HttpClient } from './http.js';
 import { unwrapResult } from './rsc.js';
+import { resolveActionName, type Target } from './targets.js';
 import type {
   ConfirmOptions,
   CreationPage,
@@ -22,6 +23,7 @@ export class HistoryService {
   constructor(
     private readonly http: HttpClient,
     private readonly auth: AuthManager,
+    private readonly target: Target,
   ) {}
 
   /** List generation history for the authenticated user. */
@@ -33,7 +35,7 @@ export class HistoryService {
     const filters = { status, type: UNDEFINED };
 
     const { data } = await this.http.callAction<HistoryPage>({
-      action: 'getHistoryPaginated',
+      action: resolveActionName(this.target, 'listHistory'),
       path: HISTORY_PATH,
       args: [uid, limit, offset, filters],
       session,
@@ -47,7 +49,7 @@ export class HistoryService {
     const limit = opts.limit ?? DEFAULT_LIMIT;
     const offset = opts.offset ?? 0;
     const { data } = await this.http.callAction<CreationPage>({
-      action: 'getCreationsPaginatedParallel',
+      action: resolveActionName(this.target, 'listCreations'),
       path: HISTORY_PATH,
       args: [uid, limit, offset],
       session,

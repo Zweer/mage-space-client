@@ -20,8 +20,8 @@ function envelope(payload: string): string {
 
 function makeAuth(fetchImpl: FetchLike): AuthManager {
   const registry = new ActionRegistry({ fetch: fetchImpl, baseUrl: BASE, seed: SEED_SNAPSHOT });
-  const http = new HttpClient(registry, fetchImpl, BASE);
-  return new AuthManager({ refreshToken: 'rt', http, fetch: fetchImpl });
+  const http = new HttpClient(registry, fetchImpl, BASE, 'production');
+  return new AuthManager({ refreshToken: 'rt', getHttp: () => http, fetch: fetchImpl });
 }
 
 describe('AuthManager', () => {

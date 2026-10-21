@@ -18,13 +18,41 @@ export class AuthError extends MageSpaceError {
 
 /** Action-hash discovery failures (page/chunk fetch, empty registry). */
 export class DiscoveryError extends MageSpaceError {
-  constructor(message: string, options?: { cause?: unknown }) {
+  /**
+   * `true` when the action name was absent even after a forced re-discovery
+   * (a fallback trigger); `false` for scrape failures (no chunks/no hashes).
+   */
+  public readonly notFound: boolean;
+
+  constructor(message: string, options?: { cause?: unknown; notFound?: boolean }) {
     super(message, options);
     this.name = 'DiscoveryError';
+    this.notFound = options?.notFound ?? false;
   }
 }
 
-/** A Server Action returned 404, indicating a stale (post-deploy) hash. */
+/**
+ * A required action is unavailable on the active host (a persistent 404 / HTML
+ * fallback that survived one in-place re-discovery). A fallback trigger.
+ */
+export class ActionUnavailableError extends MageSpaceError {
+  constructor(
+    public readonly action: string,
+    public readonly targetKey: string,
+    options?: { cause?: unknown },
+  ) {
+    super(`Action "${action}" is unavailable on target "${targetKey}"`, options);
+    this.name = 'ActionUnavailableError';
+  }
+}
+
+/**
+ * A Server Action returned 404, indicating a stale (post-deploy) hash.
+ *
+ * @deprecated Legacy export kept for backward compatibility; no longer thrown.
+ * The current signal for a definitively unavailable action is
+ * {@link ActionUnavailableError}.
+ */
 export class StaleActionError extends MageSpaceError {
   constructor(
     public readonly action: string,

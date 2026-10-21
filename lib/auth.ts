@@ -26,7 +26,12 @@ interface SecureTokenResponse {
 
 export interface AuthManagerOptions {
   refreshToken: string;
-  http: HttpClient;
+  /**
+   * Accessor for the active host's {@link HttpClient}. A closure (not the client
+   * itself) so `createUserSession` always hits whichever host is currently
+   * active after an automatic fallback.
+   */
+  getHttp: () => HttpClient;
   fetch: FetchLike;
   firebaseApiKey?: string;
   /** Page path for the `createUserSession` action (default `/creations`). */
@@ -35,7 +40,7 @@ export interface AuthManagerOptions {
 
 export class AuthManager {
   private refreshToken: string;
-  private readonly http: HttpClient;
+  private readonly getHttp: () => HttpClient;
   private readonly fetchImpl: FetchLike;
   private readonly apiKey: string;
   private readonly sessionPath: string;
@@ -44,10 +49,19 @@ export class AuthManager {
 
   constructor(opts: AuthManagerOptions) {
     this.refreshToken = opts.refreshToken;
-    this.http = opts.http;
+    this.getHttp = opts.getHttp;
     this.fetchImpl = opts.fetch;
     this.apiKey = opts.firebaseApiKey ?? DEFAULT_FIREBASE_API_KEY;
     this.sessionPath = opts.sessionPath ?? '/creations';
+  }
+
+  /**
+   * Drop the cached `__session` cookie so the next {@link getSession} mints a
+   * fresh one against the (newly) active host. The Firebase token chain is kept
+   * because it is host-independent.
+   */
+  resetSession(): void {
+    this.session = null;
   }
 
   /** Return a valid Firebase ID token, refreshing via the refresh token if needed. */
@@ -72,7 +86,7 @@ export class AuthManager {
       return this.session.cookie;
     }
     const idToken = await this.getIdToken();
-    const result = await this.http.callAction<unknown>({
+    const result = await this.getHttp().callAction<unknown>({
       action: 'createUserSession',
       path: this.sessionPath,
       args: [idToken],
