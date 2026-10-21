@@ -156,3 +156,65 @@ describe('MageSpaceClient history', () => {
     expect(saveArgs).toEqual([result]);
   });
 });
+
+const BETA = 'https://beta.mage.space';
+
+/** Beta action hashes injected via discovery (beta has no bundled seed). */
+const BETA_HASHES = {
+  createUserSession: 'b0a5e5510',
+  getCreationsPaginated: 'b0c4ea10e',
+};
+
+const betaChunk =
+  `(0,i.createServerReference)("${BETA_HASHES.createUserSession}",i.c,void 0,i.f,"createUserSession")` +
+  `(0,i.createServerReference)("${BETA_HASHES.getCreationsPaginated}",i.c,void 0,i.f,"getCreationsPaginated")`;
+
+const betaHtml = '<script src="/_next/static/chunks/beta.js"></script>';
+
+describe('MageSpaceClient history on beta', () => {
+  it('lists creations via getCreationsPaginated (not getCreationsPaginatedParallel)', async () => {
+    // Arrange
+    let creationAction: string | null = null;
+    let creationArgs: unknown[] = [];
+    server.use(
+      http.post('https://securetoken.googleapis.com/v1/token', () =>
+        HttpResponse.json({ id_token: 'a.b.c', user_id: 'uid-1', expires_in: '3600' }),
+      ),
+      http.get(`${BETA}/explore`, () =>
+        HttpResponse.html(betaHtml, { headers: { 'x-deployment-id': 'dpl_beta' } }),
+      ),
+      http.get(`${BETA}/creations`, () => HttpResponse.html(betaHtml)),
+      http.get(`${BETA}/characters`, () => HttpResponse.html(betaHtml)),
+      http.get(`${BETA}/references`, () => HttpResponse.html(betaHtml)),
+      http.get(`${BETA}/_next/static/chunks/beta.js`, () => HttpResponse.text(betaChunk)),
+      http.post(`${BETA}/creations`, async ({ request }) => {
+        const action = request.headers.get('next-action');
+        if (action === BETA_HASHES.createUserSession) {
+          return HttpResponse.text(envelope('null'), {
+            headers: { 'set-cookie': '__session=sess-beta; Path=/; HttpOnly' },
+          });
+        }
+        if (action === BETA_HASHES.getCreationsPaginated) {
+          creationAction = action;
+          creationArgs = (await request.json()) as unknown[];
+          return HttpResponse.text(
+            envelope(
+              '{"creations":[{"id":"c-1","url":"https://cdn/beta.jpg","type":"image"}],"hasMore":false}',
+            ),
+          );
+        }
+        return HttpResponse.text('not found', { status: 404 });
+      }),
+    );
+    const client = new MageSpaceClient({ refreshToken: 'rt', fallback: { start: 'beta' } });
+
+    // Act
+    const page = await client.listCreations({ limit: 4, offset: 8 });
+
+    // Assert
+    expect(client.getActiveTarget()).toBe('beta');
+    expect(creationAction).toBe(BETA_HASHES.getCreationsPaginated);
+    expect(creationArgs).toEqual(['uid-1', 4, 8]);
+    expect(page.creations[0]?.id).toBe('c-1');
+  });
+});

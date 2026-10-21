@@ -196,3 +196,102 @@ describe('MageSpaceClient generation', () => {
     ]);
   });
 });
+
+const BETA = 'https://beta.mage.space';
+
+/** Beta action hashes injected via discovery (beta has no bundled seed). */
+const BETA_HASHES = {
+  createUserSession: 'b0a5e5510',
+  runArchitecture: 'b0a4c4001',
+  getHistoryPaginated: 'b0415700a',
+  cancelArchitectureJob: 'b0ca4ce10',
+  getCreationsPaginated: 'b0c4ea10e',
+};
+
+/** A chunk exposing every beta hash the generation/history flows need. */
+const betaChunk =
+  `(0,i.createServerReference)("${BETA_HASHES.createUserSession}",i.c,void 0,i.f,"createUserSession")` +
+  `(0,i.createServerReference)("${BETA_HASHES.runArchitecture}",i.c,void 0,i.f,"runArchitecture")` +
+  `(0,i.createServerReference)("${BETA_HASHES.getHistoryPaginated}",i.c,void 0,i.f,"getHistoryPaginated")` +
+  `(0,i.createServerReference)("${BETA_HASHES.cancelArchitectureJob}",i.c,void 0,i.f,"cancelArchitectureJob")` +
+  `(0,i.createServerReference)("${BETA_HASHES.getCreationsPaginated}",i.c,void 0,i.f,"getCreationsPaginated")`;
+
+const betaHtml = '<script src="/_next/static/chunks/beta.js"></script>';
+
+/** Discovery handlers for the beta host (pages + the single chunk). */
+function betaDiscoveryHandlers() {
+  return [
+    http.get(`${BETA}/explore`, () =>
+      HttpResponse.html(betaHtml, { headers: { 'x-deployment-id': 'dpl_beta' } }),
+    ),
+    http.get(`${BETA}/creations`, () => HttpResponse.html(betaHtml)),
+    http.get(`${BETA}/characters`, () => HttpResponse.html(betaHtml)),
+    http.get(`${BETA}/references`, () => HttpResponse.html(betaHtml)),
+    http.get(`${BETA}/_next/static/chunks/beta.js`, () => HttpResponse.text(betaChunk)),
+  ];
+}
+
+describe('MageSpaceClient generation on beta (paginated poll strategy)', () => {
+  it('submits with generationMode unlimited and resolves via the paginated poll (never getHistoryById)', async () => {
+    // Arrange
+    let getHistoryByIdRequested = false;
+    let submittedMode: unknown;
+    let historyPagePolls = 0;
+    server.use(
+      tokenHandler,
+      ...betaDiscoveryHandlers(),
+      http.post(`${BETA}/explore`, async ({ request }) => {
+        const action = request.headers.get('next-action');
+        if (action === BETA_HASHES.runArchitecture) {
+          const body = (await request.json()) as [{ generationMode: unknown }];
+          submittedMode = body[0]?.generationMode;
+          return HttpResponse.text(envelope('{"history_id":"h-beta"}'));
+        }
+        // getHistoryById must never be requested on beta.
+        getHistoryByIdRequested = true;
+        return HttpResponse.text('not found', { status: 404 });
+      }),
+      http.post(`${BETA}/creations`, async ({ request }) => {
+        const action = request.headers.get('next-action');
+        if (action === BETA_HASHES.createUserSession) {
+          return HttpResponse.text(envelope('null'), {
+            headers: { 'set-cookie': '__session=sess-beta; Path=/; HttpOnly' },
+          });
+        }
+        if (action === BETA_HASHES.getHistoryPaginated) {
+          const args = (await request.json()) as [string, number, number, { status: string }];
+          const status = args[3]?.status;
+          historyPagePolls += 1;
+          // The running job is only visible under the 'running' filter; once it
+          // completes it appears under the terminal ('$undefined') sweep.
+          if (status === 'running') {
+            const payload =
+              historyPagePolls <= 1
+                ? '{"histories":[{"id":"h-beta","status":"running","result":null}],"hasMore":false}'
+                : '{"histories":[],"hasMore":false}';
+            return HttpResponse.text(envelope(payload));
+          }
+          return HttpResponse.text(
+            envelope(
+              '{"histories":[{"id":"h-beta","status":"success","result":{"data":{"image":"https://cdn/beta.jpg"}}}],"hasMore":false}',
+            ),
+          );
+        }
+        return HttpResponse.text('not found', { status: 404 });
+      }),
+    );
+    const client = new MageSpaceClient({ refreshToken: 'rt', fallback: { start: 'beta' } });
+
+    // Act
+    const { historyId } = await client.generate({ prompt: 'a red fox on beta' });
+    const result = await client.waitForResult(historyId, { intervalMs: 1, timeoutMs: 5000 });
+
+    // Assert
+    expect(client.getActiveTarget()).toBe('beta');
+    expect(historyId).toBe('h-beta');
+    expect(result.status).toBe('success');
+    expect(result.result?.data.image).toBe('https://cdn/beta.jpg');
+    expect(submittedMode).toBe('unlimited');
+    expect(getHistoryByIdRequested).toBe(false);
+  });
+});
