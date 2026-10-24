@@ -168,6 +168,41 @@ Unlike traditional REST APIs, mage.space uses Next.js Server Actions:
 - Responses use the React Server Component (RSC) "Flight" wire format
 - Action hashes change on every Vercel deploy — discovered from the page bundles (across routes) and cached, with a bundled seed for a warm start
 
+### Batched discovery (subrequest-capped hosts)
+
+`discoverActions` fetches every discovery page and every referenced chunk in one
+go. On hosts with a hard per-invocation subrequest cap — e.g. the Cloudflare
+Workers free plan — that can exceed the limit. Three platform-agnostic
+primitives let such a host discover hashes in bounded batches:
+
+- `listDiscoveryChunks({ fetch, baseUrl, pages? })` — GETs only the pages
+  (one subrequest each, `<= pages.length`) and returns the de-duplicated,
+  insertion-ordered `chunkPaths` plus the `deploymentId`.
+- `scrapeChunks({ fetch, baseUrl, chunkPaths })` — fetches ONLY the chunk paths
+  it is given (one subrequest each) and returns a partial `hashes` map that can
+  be merged across batches. It never throws on an empty batch.
+- `requiredActionsForClient()` — the action names the portal actually invokes,
+  so a batched caller can early-exit once it has found all of them.
+
+```typescript
+import {
+  listDiscoveryChunks,
+  scrapeChunks,
+  requiredActionsForClient,
+} from '@zweer/mage-space-client';
+
+const { chunkPaths } = await listDiscoveryChunks({ fetch, baseUrl });
+const required = requiredActionsForClient();
+const hashes: Record<string, string> = {};
+
+// Process chunks in batches sized to the host's subrequest budget.
+for (const batch of chunksInGroupsOf(chunkPaths, 40)) {
+  const partial = await scrapeChunks({ fetch, baseUrl, chunkPaths: batch });
+  Object.assign(hashes, partial.hashes);
+  if (required.every((name) => name in hashes)) break; // early-exit
+}
+```
+
 ## Project Structure
 
 ```

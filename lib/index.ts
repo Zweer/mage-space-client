@@ -1,7 +1,15 @@
 /** Public entry point for `@zweer/mage-space-client`. */
 export const VERSION = '0.0.0';
 
-export { ActionRegistry, discoverActions, InMemoryActionCache } from './actions.js';
+export type { ChunkListResult } from './actions.js';
+export {
+  ActionRegistry,
+  discoverActions,
+  InMemoryActionCache,
+  listDiscoveryChunks,
+  requiredActionsForClient,
+  scrapeChunks,
+} from './actions.js';
 export { CharactersService } from './characters.js';
 export { MageSpaceClient } from './client.js';
 export {
