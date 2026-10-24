@@ -1,5 +1,13 @@
 # Changelog
 
+## [1.4.0](https://github.com/Zweer/mage-space-client/compare/v1.3.1...v1.4.0) (2026-10-24)
+
+
+### Features
+
+* **actions:** add batched discovery (listDiscoveryChunks, scrapeChunks, requiredActionsForClient) ([08ca539](https://github.com/Zweer/mage-space-client/commit/08ca5391fbbb90204f885328dc33a121c3f90a76))
+* batched action discovery for subrequest-capped hosts ([f0c786a](https://github.com/Zweer/mage-space-client/commit/f0c786ae3ee4e82374b62a687de8f6d68f25784d))
+
 ## [1.3.1](https://github.com/Zweer/mage-space-client/compare/v1.3.0...v1.3.1) (2026-10-24)
 
 
