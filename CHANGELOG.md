@@ -1,5 +1,19 @@
 # Changelog
 
+## [1.3.0](https://github.com/Zweer/mage-space-client/compare/v1.2.0...v1.3.0) (2026-10-24)
+
+
+### Features
+
+* **client:** :sparkles: add automatic beta-portal fallback mechanism ([85d69ad](https://github.com/Zweer/mage-space-client/commit/85d69addf0f54b893e2d63d3bab6e762b39cd9e3))
+* **scripts:** :sparkles: add usage analysis for gems-vs-membership comparison ([649a2ce](https://github.com/Zweer/mage-space-client/commit/649a2cec086b4ff242b5cc1e87e88f6208ba22f3))
+
+
+### Bug Fixes
+
+* **http:** treat 409 as a stale-action signal (re-discover + fallback) ([4d3be5c](https://github.com/Zweer/mage-space-client/commit/4d3be5c7a68359f1473a7d40c2467b44cdc92ae7))
+* **rsc:** :bug: scope reference-cycle guard to the resolution path ([083fc8f](https://github.com/Zweer/mage-space-client/commit/083fc8f6f98f0a5e493db4e35998aa14bed28df1))
+
 ## [1.2.0](https://github.com/Zweer/mage-space-client/compare/v1.1.2...v1.2.0) (2026-08-24)
 
 
