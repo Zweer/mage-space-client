@@ -7,7 +7,7 @@
  * stale (a request 404s) or when explicitly refreshed.
  */
 import { DiscoveryError } from './errors.js';
-import type { ActionCache, ActionName, ActionSnapshot, FetchLike } from './types.js';
+import type { ActionCache, ActionHashes, ActionName, ActionSnapshot, FetchLike } from './types.js';
 
 /** `createServerReference)("<hash>", callServer, void 0, findSourceMapURL, "<fn>")` */
 const CREATE_SERVER_REF_RE = /createServerReference\)\("([0-9a-f]+)"[^)]*?"([^"]+)"\)/g;
@@ -42,18 +42,81 @@ export interface DiscoveryOptions {
   discoveryPaths?: string[];
 }
 
+/** Result of {@link listDiscoveryChunks}: the JS chunk paths to scrape. */
+export interface ChunkListResult {
+  /** Vercel deployment id from the first page's `x-deployment-id` (`''` if none). */
+  deploymentId: string;
+  /** De-duplicated, insertion-ordered `/_next/static/chunks/*.js` paths. */
+  chunkPaths: string[];
+}
+
 /**
- * Discover the current Server Action hashes by scraping the page HTML for JS
- * chunk URLs and extracting `createServerReference(...)` calls from each chunk.
+ * The action names the portal actually invokes.
  *
- * @throws {DiscoveryError} on network failure or when nothing is discovered.
+ * @remarks
+ * Verified against `lib/auth.ts`, `lib/generation.ts`/`lib/history.ts` (via
+ * `resolveActionName` on `PRODUCTION_TARGET`), `lib/characters.ts`, and
+ * `lib/references.ts`. A batched, subrequest-capped caller (e.g. a Cloudflare
+ * Worker) uses this list to know when it has discovered everything it needs and
+ * can early-exit without scraping the remaining chunks. Every name is a key in
+ * {@link SEED_SNAPSHOT}.hashes.
  */
-export async function discoverActions(opts: DiscoveryOptions): Promise<ActionSnapshot> {
+const REQUIRED_ACTIONS = [
+  'createUserSession',
+  'getHistoryPaginated',
+  'getHistoryById',
+  'runArchitecture',
+  'cancelArchitectureJob',
+  'getCreationsPaginatedParallel',
+  'getMentionSuggestionsParallel',
+  'createCharacter',
+  'updateCharacter',
+  'deleteCharacter',
+  'getCharacter',
+  'getCharacters',
+  'publishCharacter',
+  'unpublishCharacter',
+  'uploadCharacterImage',
+  'getCharactersPaginated',
+  'generateCharacterVoice',
+  'followCharacter',
+  'unfollowCharacter',
+  'uploadReferenceImage',
+  'createReference',
+  'updateReference',
+  'deleteReference',
+  'getReferences',
+  'getReferencesPaginated',
+] as const satisfies readonly ActionName[];
+
+/**
+ * The action names a batched discovery caller must find before it can stop.
+ *
+ * @remarks
+ * These are the actions the portal invokes; once a batched caller has hashes for
+ * all of them it can early-exit instead of scraping every remaining chunk.
+ */
+export function requiredActionsForClient(): ActionName[] {
+  return [...REQUIRED_ACTIONS];
+}
+
+/**
+ * List the JS chunk paths referenced by the discovery pages.
+ *
+ * @remarks
+ * Issues at most one GET per page (`<= pages.length` subrequests), so a caller on
+ * a subrequest-capped host (e.g. Cloudflare Workers free plan) can list chunks
+ * cheaply and then scrape them in bounded batches via {@link scrapeChunks}.
+ *
+ * @throws {DiscoveryError} when no JS chunk references are found.
+ */
+export async function listDiscoveryChunks(opts: {
+  fetch: FetchLike;
+  baseUrl: string;
+  pages?: string[];
+}): Promise<ChunkListResult> {
   const { fetch, baseUrl } = opts;
-  const pages =
-    opts.discoveryPath !== undefined
-      ? [opts.discoveryPath]
-      : (opts.discoveryPaths ?? DISCOVERY_PAGES);
+  const pages = opts.pages ?? DISCOVERY_PAGES;
 
   let deploymentId = '';
   const chunkPaths = new Set<string>();
@@ -82,10 +145,30 @@ export async function discoverActions(opts: DiscoveryOptions): Promise<ActionSna
   if (chunkPaths.size === 0) {
     throw new DiscoveryError('No JS chunk references found in discovery pages');
   }
+  return { deploymentId, chunkPaths: [...chunkPaths] };
+}
 
-  const hashes: ActionSnapshot['hashes'] = {};
+/**
+ * Scrape a specific set of JS chunks for `createServerReference(...)` hashes.
+ *
+ * @remarks
+ * Fetches ONLY the passed `chunkPaths` (one subrequest each), so a caller can
+ * process chunks in batches sized to its subrequest budget and merge the partial
+ * hash maps across batches. First hash wins per function name, mirroring
+ * {@link discoverActions}. Never throws on an empty result — a single batch may
+ * legitimately find nothing.
+ */
+export async function scrapeChunks(opts: {
+  fetch: FetchLike;
+  baseUrl: string;
+  chunkPaths: string[];
+}): Promise<{ deploymentId: string; hashes: ActionHashes }> {
+  const { fetch, baseUrl, chunkPaths } = opts;
+
+  let deploymentId = '';
+  const hashes: ActionHashes = {};
   await Promise.all(
-    [...chunkPaths].map(async (path) => {
+    chunkPaths.map(async (path) => {
       try {
         const chunkRes = await fetch(`${baseUrl}${path}`, {
           headers: { accept: 'application/javascript' },
@@ -93,8 +176,8 @@ export async function discoverActions(opts: DiscoveryOptions): Promise<ActionSna
         if (!chunkRes.ok) {
           return;
         }
-        // Fallback: CDN-cached page HTML may omit x-deployment-id; chunk responses
-        // are served by the deployment and usually carry it.
+        // Chunk responses are served by the deployment and usually carry the id,
+        // even when CDN-cached page HTML omits it.
         if (deploymentId === '') {
           deploymentId = chunkRes.headers.get('x-deployment-id') ?? '';
         }
@@ -107,14 +190,51 @@ export async function discoverActions(opts: DiscoveryOptions): Promise<ActionSna
           }
         }
       } catch {
-        // A single failed chunk must not abort discovery.
+        // A single failed chunk must not abort the rest.
       }
     }),
   );
 
+  return { deploymentId, hashes };
+}
+
+/**
+ * Discover the current Server Action hashes by scraping the page HTML for JS
+ * chunk URLs and extracting `createServerReference(...)` calls from each chunk.
+ *
+ * @remarks
+ * Composes {@link listDiscoveryChunks} (page GETs) and {@link scrapeChunks} (over
+ * all discovered chunks) into the full snapshot. Unsuitable for subrequest-capped
+ * hosts, which should batch {@link scrapeChunks} instead.
+ *
+ * @throws {DiscoveryError} on network failure or when nothing is discovered.
+ */
+export async function discoverActions(opts: DiscoveryOptions): Promise<ActionSnapshot> {
+  const { fetch, baseUrl } = opts;
+  const pages =
+    opts.discoveryPath !== undefined
+      ? [opts.discoveryPath]
+      : (opts.discoveryPaths ?? DISCOVERY_PAGES);
+
+  const { deploymentId: pageDeploymentId, chunkPaths } = await listDiscoveryChunks({
+    fetch,
+    baseUrl,
+    pages,
+  });
+
+  const { deploymentId: chunkDeploymentId, hashes } = await scrapeChunks({
+    fetch,
+    baseUrl,
+    chunkPaths,
+  });
+
   if (Object.keys(hashes).length === 0) {
     throw new DiscoveryError('No server action hashes discovered in JS chunks');
   }
+
+  // Fallback: CDN-cached page HTML may omit x-deployment-id; chunk responses
+  // are served by the deployment and usually carry it.
+  const deploymentId = pageDeploymentId !== '' ? pageDeploymentId : chunkDeploymentId;
   return { deploymentId, hashes, discoveredAt: Date.now() };
 }
 
