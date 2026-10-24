@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.3.1](https://github.com/Zweer/mage-space-client/compare/v1.3.0...v1.3.1) (2026-10-24)
+
+
+### Bug Fixes
+
+* **deps:** bump jose from 6.2.9 to 6.2.12 in the production-dependencies group across 1 directory ([155dfed](https://github.com/Zweer/mage-space-client/commit/155dfeddc999cfb28ff9127798de30ee749b2507))
+
 ## [1.3.0](https://github.com/Zweer/mage-space-client/compare/v1.2.0...v1.3.0) (2026-10-24)
 
 
