@@ -16,11 +16,13 @@ const DEFAULT_USER_AGENT =
   '(KHTML, like Gecko) Chrome/125.0.0.0 Safari/537.36';
 
 /**
- * HTTP statuses that mean "this action is unavailable on this host". Kept as a
- * set so a status (e.g. a confirmed 409) can be added as a one-line change once
- * captured in `docs/api/beta/`.
+ * HTTP statuses that mean "this action is unavailable on this host". A stale
+ * (post-deploy) action hash surfaces as a 404 on the production host and as a
+ * 409 ("Server Action unavailable") on the beta host — both mean the same
+ * thing: invalidate the registry, re-discover, and (if still unavailable) fall
+ * back to the next host.
  */
-const UNAVAILABLE_STATUSES = new Set([404]);
+const UNAVAILABLE_STATUSES = new Set([404, 409]);
 
 /**
  * Known RSC error digests mapped to human-readable messages.

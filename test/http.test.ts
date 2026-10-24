@@ -88,6 +88,71 @@ describe('HttpClient action-unavailability detection', () => {
     });
   });
 
+  it('recovers from a first-time 409 by re-discovering and retrying once', async () => {
+    // Arrange — the beta host returns 409 "Server Action unavailable" for a
+    // stale hash (where production returns 404); re-discovery yields a fresh
+    // hash that the retried POST serves.
+    let explorePosts = 0;
+    server.use(
+      http.get(`${BASE}/explore`, () =>
+        HttpResponse.html(discoveryHtml, { headers: { 'x-deployment-id': 'dpl_fresh' } }),
+      ),
+      http.get(`${BASE}/creations`, () => HttpResponse.html(discoveryHtml)),
+      http.get(`${BASE}/characters`, () => HttpResponse.html(discoveryHtml)),
+      http.get(`${BASE}/references`, () => HttpResponse.html(discoveryHtml)),
+      http.get(`${BASE}/_next/static/chunks/app.js`, () => HttpResponse.text(discoveryChunk)),
+      http.post(`${BASE}/explore`, ({ request }) => {
+        explorePosts += 1;
+        const action = request.headers.get('next-action');
+        if (action === FRESH_HASH) {
+          return HttpResponse.text(envelope('{"history_id":"h-409"}'));
+        }
+        return HttpResponse.text('Server Action unavailable', { status: 409 });
+      }),
+    );
+    const registry = new ActionRegistry({ fetch, baseUrl: BASE, seed: SEED_SNAPSHOT });
+    const client = new HttpClient(registry, fetch, BASE, 'beta');
+
+    // Act
+    const { data } = await client.callAction<{ history_id: string }>({
+      action: 'runArchitecture',
+      path: '/explore',
+      args: [],
+    });
+
+    // Assert — stale seed hash 409'd, re-discovery + retry succeeded.
+    expect(data.history_id).toBe('h-409');
+    expect(explorePosts).toBe(2);
+  });
+
+  it('throws ActionUnavailableError when a 409 persists after the retry', async () => {
+    // Arrange — the POST always 409s and re-discovery keeps the same host, so
+    // the retried call is still unavailable → fallback trigger.
+    server.use(
+      http.get(`${BASE}/explore`, () =>
+        HttpResponse.html(discoveryHtml, { headers: { 'x-deployment-id': 'dpl_fresh' } }),
+      ),
+      http.get(`${BASE}/creations`, () => HttpResponse.html(discoveryHtml)),
+      http.get(`${BASE}/characters`, () => HttpResponse.html(discoveryHtml)),
+      http.get(`${BASE}/references`, () => HttpResponse.html(discoveryHtml)),
+      http.get(`${BASE}/_next/static/chunks/app.js`, () => HttpResponse.text(discoveryChunk)),
+      http.post(`${BASE}/explore`, () =>
+        HttpResponse.text('Server Action unavailable', { status: 409 }),
+      ),
+    );
+    const registry = new ActionRegistry({ fetch, baseUrl: BASE, seed: SEED_SNAPSHOT });
+    const client = new HttpClient(registry, fetch, BASE, 'beta');
+
+    // Act & Assert
+    await expect(
+      client.callAction({ action: 'runArchitecture', path: '/explore', args: [] }),
+    ).rejects.toMatchObject({
+      name: 'ActionUnavailableError',
+      action: 'runArchitecture',
+      targetKey: 'beta',
+    });
+  });
+
   it('throws ActionUnavailableError when a 200 text/html fallback persists after the retry', async () => {
     // Arrange — a stale hash can surface as a 200 serving the page shell (HTML)
     // instead of the RSC response.
