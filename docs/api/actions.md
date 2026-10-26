@@ -9,6 +9,20 @@ Mage.space uses Next.js Server Actions. Each action is identified by a hex hash 
 - **Deployment ID:** `dpl_2w2igPYTRJKeDaX6iAUMbGwDEWZC`
 - **Discovered:** 2026-08-24
 
+> **Update — 2026-10-26 (deploy `dpl_5GCsewvKe5dygHMc6sVMECG7Brad`).**
+> All hashes in the "Complete Action Registry (2026-08-24)" table below are stale
+> as of this deploy — every action's hash rotated (only `getEntityImageUploadUrl`
+> kept its value). The warm seed in `lib/seed.ts` has been refreshed to this
+> deploy; the registry table below is kept as a historical snapshot and is **not**
+> re-hashed inline. Two structural changes landed with this deploy:
+> - **Billing/power-pack actions removed.** `getMyUserMembership`,
+>   `getActivePowerPack`, `getUnusedPowerPacks` and `getPowerPackStatsById` no
+>   longer exist (absent from the full 166-action set, no renamed equivalent).
+>   See [`billing.md`](./billing.md) for the current billing/gem action surface.
+> - **Base64 upload actions removed** (`uploadTempCreationImage`,
+>   `uploadUserImage`), superseded by the signed-URL `get*UploadUrl` helpers. See
+>   [`upload.md`](./upload.md).
+
 ## Discovery Method
 
 Action hashes are embedded in the JavaScript bundles as `createServerReference()` calls:
@@ -138,6 +152,14 @@ Action hashes are embedded in the JavaScript bundles as `createServerReference()
 | `405544f6caadefcf71aa860f2dcf942bbc71bba379` | `getLegacyAppConfig` | Legacy app configuration |
 
 ### Billing & Power Packs
+
+> **Removed 2026-10-26.** `getActivePowerPack`, `getUnusedPowerPacks` and
+> `getPowerPackStatsById` (and `getMyUserMembership` in the Auth & User table
+> above) no longer exist on this deploy. The current billing/gem action surface —
+> including the new `getCheckoutPaidStatusParallel`, `getCreditsPaginated`,
+> `getInAppPurchaseContext` and `purchaseGemsInApp` — is documented in
+> [`billing.md`](./billing.md). The hashes in the table below are the historical
+> 2026-08-24 values.
 
 | Hash | Function | Purpose |
 |------|----------|---------|

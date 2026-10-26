@@ -21,6 +21,7 @@ Mage.space is **NOT a REST API**. It uses Next.js Server Actions:
 | `upload.md` | Signed-URL image upload (characters/references) | ✅ Verified (2026-10-26) |
 | `history.md` | History listing, creations save/delete | ✅ Verified |
 | `concepts.md` | Official concepts + community models | ✅ Verified |
+| `billing.md` | Credits/gems/subscription actions; removed power-pack actions | ✅ Verified (2026-10-26) |
 | `actions.md` | Action hash discovery mechanism | ✅ Verified |
 
 ## Key Discoveries
@@ -50,5 +51,11 @@ Tested and working as of 2026-08-07.
 
 ## Current Deployment
 
-- **Deployment ID:** `dpl_2w2igPYTRJKeDaX6iAUMbGwDEWZC`
-- **Last verified:** 2026-08-24
+- **Deployment ID:** `dpl_5GCsewvKe5dygHMc6sVMECG7Brad`
+- **Last verified:** 2026-10-26
+- **Previous:** `dpl_2w2igPYTRJKeDaX6iAUMbGwDEWZC` (2026-08-24)
+
+On the 2026-10-26 deploy every action hash rotated (only `getEntityImageUploadUrl`
+kept its value), `createCharacter` is unchanged in name/path/args, and the
+power-pack/membership actions were removed (see [`billing.md`](./billing.md)).
+`lib/seed.ts` is refreshed to this deploy.
