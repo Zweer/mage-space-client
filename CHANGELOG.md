@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.4.2](https://github.com/Zweer/mage-space-client/compare/v1.4.1...v1.4.2) (2026-10-26)
+
+
+### Performance Improvements
+
+* **actions:** :bookmark: refresh action-hash seed to deploy dpl_5GCsewvKe5dygHMc6sVMECG7Brad ([d0c5939](https://github.com/Zweer/mage-space-client/commit/d0c593938e1d141ac41c74e59b8fedbefc7f1569))
+
 ## [1.4.1](https://github.com/Zweer/mage-space-client/compare/v1.4.0...v1.4.1) (2026-10-26)
 
 
