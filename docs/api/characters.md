@@ -95,8 +95,79 @@ Characters are trained identities (face/body) that can be referenced in generati
 
 ## Create Character (`createCharacter`)
 
-**Action Hash:** `4012fee65f53db4fbe9d83808da2869751fe503a87`
-**Chunk:** `7547-ebaf1440bf2bf014.js`
+> **Discovery re-check — 2026-10-26 (deploy `dpl_5GCsewvKe5dygHMc6sVMECG7Brad`).**
+> `createCharacter` is **NOT renamed, NOT removed, and NOT migrated to a
+> multi-step flow.** It is still a single Server Action named `createCharacter`,
+> posted to `/explore`, taking one positional argument: an array with a single
+> character object (`[{ name, username, image_url, ... }]`). Only its hash
+> changed with the deploy. The function name, argument shape, and RSC response
+> envelope are unchanged from what this section already documents.
+>
+> **Old vs new (name unchanged, hash rotated):**
+>
+> | | Seed (2026-08-24, `dpl_2w2igPYTRJKeDaX6iAUMbGwDEWZC`) | Current (2026-10-26, `dpl_5GCsewvKe5dygHMc6sVMECG7Brad`) |
+> |---|---|---|
+> | Function name | `createCharacter` | `createCharacter` (same) |
+> | Hash | `401ceece486398904b9ba48daa7fc0ac951fb72168` | `40fd9c8ce5ca6cba0e21e28849a54b502020ddc20b` |
+> | Path | `/explore` | `/explore` (same) |
+> | Body | `[{ character object }]` | `[{ character object }]` (same) |
+> | Response | RSC → created character with `id` | same |
+>
+> **Where the hash lives now.** The current `createServerReference(...)` call
+> for `createCharacter` is in chunk `467-6d4f47f39712bb8b.js` (also duplicated in
+> `7372-*.js`, `18404.*.js`, `77527-*.js`). **All four of these chunks are
+> directly referenced in the raw HTML of `/explore`, `/creations`, `/characters`,
+> AND `/references`** — so every discovery page reaches it. Replaying the client's
+> exact pipeline (`CHUNK_RE` over the page HTML → `scrapeChunks` →
+> `CREATE_SERVER_REF_RE`) against the live site finds `createCharacter` with the
+> current hash on all four pages. **Verified** ✅ on the wire: an authenticated
+> `POST /explore` with `next-action: 40fd9c8...` and body `[{}]` returns
+> `HTTP 500` + `1:E{"digest":"..."}` (server-side validation rejects the empty
+> input before persistence) — i.e. the action is live and accepts a single
+> object argument. No test character was created.
+>
+> **Diagnosis of the portal's `DiscoveryError: Action "createCharacter" not found
+> after discovery`.** This is NOT a mage.space-side change — the action is fully
+> discoverable from the current bundles. `ActionRegistry.getHash` only throws
+> `not found` when the name is absent from **both** the seed/cache **and** a live
+> discovery pass. A merely stale hash does not trigger it (the seed in this repo
+> still carries a `createCharacter` hash). So the portal hits this only if, in its
+> runtime, (a) its seed snapshot lacks `createCharacter`, and (b) its live
+> discovery returns nothing for it. Given the action is present in HTML-referenced
+> chunks of all discovery pages, the likely culprits are portal-environment issues
+> — a reduced `discoveryPaths`, a subrequest-capped `scrapeChunks` batch that never
+> reaches `467-*.js`, or a discovery fetch that is blocked/short-circuited — not a
+> change to `createCharacter` itself. The correct fix is to refresh the seed to the
+> current deploy and/or ensure the portal's discovery actually scrapes the chunks,
+> not to rename/re-wire the action.
+>
+> **Companion hashes rotated by the same deploy** (all names unchanged; only
+> `getEntityImageUploadUrl` kept its hash):
+>
+> | Action | Seed hash | Current hash |
+> |---|---|---|
+> | `createUserSession` | `60b45776be93d57b1f43deaf8d6f9a837c6b9c169b` | `60ae31ddafa2a69fd79229a4eb09856137e4e384cb` |
+> | `updateCharacter` | `6057ae8c4ae8868e3a4b045845814b0689ac61a1e0` | `60a7ce901122ee6d8ea8d17a49c4d9cc527a5c17db` |
+> | `deleteCharacter` | `4071b6010bffdf242150e0322cd0966463268414d8` | `4036d7c2a245bfafc14969e62da5c45c6a00aa8b2e` |
+> | `getCharacter` | `40ce38eb438c78fa51ee09be911ba0c3b02d7cbcad` | `4064f97d55bb11f3cc81ab1bebcf0977003987c2b4` |
+> | `getCharacters` | `40c74f795b040ec3d0841360b532eb938932fc4bc3` | `4023daa6fa1fc49e6c8019270678275814d3b08df5` |
+> | `getCharactersPaginated` | `709855baaecec89ad7b73ca44621fe93dfd93fcdee` | `70f24bd334ce2d4c887a0644a8683b8b490ed9317a` |
+> | `publishCharacter` | `40b489876c75c1cd836a108742da4753fb2f671565` | `406a27d8231b67cfb14448fdc56cb6d614b5b84d03` |
+> | `unpublishCharacter` | `40c785b54f5c25bd50cfaebc6817f9d0b9f5e6e145` | `403a03eb917ee8dd43bd5c243d902e0161ef008ebf` |
+> | `followCharacter` | `403b46c309f4239df7579c00654881afd855fc1757` | `4064ff82ea68e7fe36f32b5e7322ecc1c8aeceb2e5` |
+> | `unfollowCharacter` | `400dd84b2d0f2f582df6c72092ea5249678b68d4d5` | `408c1211750f158fa3713824dccee35822a80492ad` |
+> | `generateCharacterVoice` | `60b54e75a5c3de2b0e4df7ebec5cf6ef1aaeb2ed35` | `6049f6938effbafebd277035342be3200d8f4de4e3` |
+> | `getMentionSuggestionsParallel` | `7fe1156be29ed3824514220877818246e7649234fa` | `7f531e87796edfd728e6ee827b3a171ee29b8cd6fa` |
+> | `createReference` | `403a057e1bd8967b3bb728df1722019d14ca7c4e14` | `40ae1753c005934498d26dd3a500e75b43e5559d48` |
+> | `getEntityImageUploadUrl` | `781afde0255a669e470017f5a4174f4bef8a1b5a5a` | `781afde0255a669e470017f5a4174f4bef8a1b5a5a` (unchanged) |
+>
+> New character-related actions present in this deploy that the client does not
+> yet model: `createCharacterStories`, `getCharacterStoryFeedParallel`,
+> `getCharacterStoryAnalyticsParallel`, `recordCharacterStoryViewParallel`,
+> `getCharactersParallel`, `getFilteredEntityIds`. None replace `createCharacter`.
+
+**Action Hash:** `40fd9c8ce5ca6cba0e21e28849a54b502020ddc20b` _(2026-10-26 deploy; was `4012fee65f53db4fbe9d83808da2869751fe503a87` / seed `401ceece...`)_
+**Chunk:** `467-6d4f47f39712bb8b.js` _(2026-10-26; previously `7547-ebaf1440bf2bf014.js`)_
 
 ### Request Body
 

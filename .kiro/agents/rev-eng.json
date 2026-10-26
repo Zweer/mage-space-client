@@ -15,15 +15,35 @@
     "thinking",
     "@playwright"
   ],
-  "allowedTools": ["read", "grep", "glob", "@playwright"],
-  "toolsSettings": {
-    "write": {
-      "allowedPaths": ["docs/api/**"]
-    },
-    "shell": {
-      "autoAllowReadonly": true,
-      "deniedCommands": [".*git commit.*", ".*git push.*", ".*git tag .*", ".*npm publish.*"]
-    }
+  "permissions": {
+    "rules": [
+      {
+        "capability": "fs_write",
+        "match": ["docs/api/**"],
+        "effect": "allow"
+      },
+      {
+        "capability": "fs_read",
+        "effect": "allow"
+      },
+      {
+        "capability": "shell",
+        "effect": "allow"
+      },
+      {
+        "capability": "shell",
+        "match": ["*git commit*", "*git push*", "*git tag *", "*npm publish*"],
+        "effect": "deny"
+      },
+      {
+        "capability": "web_fetch",
+        "effect": "allow"
+      },
+      {
+        "capability": "web_search",
+        "effect": "allow"
+      }
+    ]
   },
   "mcpServers": {
     "playwright": {

@@ -15,27 +15,47 @@
     "thinking",
     "code"
   ],
-  "allowedTools": ["read", "grep", "glob", "code"],
-  "toolsSettings": {
-    "write": {
-      "allowedPaths": [
-        ".kiro/**",
-        "lib/**",
-        "test/**",
-        "docs/**",
-        "package.json",
-        "package-lock.json",
-        "tsconfig.json",
-        "biome.json",
-        "vitest.config.ts",
-        "tsdown.config.ts",
-        "README.md",
-        "AGENTS.md"
-      ]
-    },
-    "shell": {
-      "autoAllowReadonly": true,
-      "deniedCommands": [".*git commit.*", ".*git push.*", ".*git tag .*", ".*npm publish.*"]
-    }
+  "permissions": {
+    "rules": [
+      {
+        "capability": "fs_write",
+        "match": [
+          ".kiro/**",
+          "lib/**",
+          "test/**",
+          "docs/**",
+          "package.json",
+          "package-lock.json",
+          "tsconfig.json",
+          "biome.json",
+          "vitest.config.ts",
+          "tsdown.config.ts",
+          "README.md",
+          "AGENTS.md"
+        ],
+        "effect": "allow"
+      },
+      {
+        "capability": "fs_read",
+        "effect": "allow"
+      },
+      {
+        "capability": "shell",
+        "effect": "allow"
+      },
+      {
+        "capability": "shell",
+        "match": ["*git commit*", "*git push*", "*git tag *", "*npm publish*"],
+        "effect": "deny"
+      },
+      {
+        "capability": "web_fetch",
+        "effect": "allow"
+      },
+      {
+        "capability": "web_search",
+        "effect": "allow"
+      }
+    ]
   }
 }
