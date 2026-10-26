@@ -181,6 +181,41 @@ describe('MageSpaceClient references', () => {
     ).rejects.toThrow(/too long/);
   });
 
+  it('uploads a reference image via the signed-URL flow with entityType "reference"', async () => {
+    // Arrange
+    let actionArgs: unknown;
+    const signedUrl = 'https://storage.googleapis.com/mage-cdn/references/uid-1/image/h.jpg?sig=x';
+    const publicUrl = 'https://cdn3.mage.space/references/uid-1/image/h.jpg';
+    server.use(
+      tokenHandler,
+      sessionHandler,
+      http.post(`${BASE}/explore`, async ({ request }) => {
+        if (request.headers.get('next-action') !== SEED_SNAPSHOT.hashes.getEntityImageUploadUrl) {
+          return HttpResponse.text('not found', { status: 404 });
+        }
+        actionArgs = await request.json();
+        return HttpResponse.text(
+          envelope(
+            `{"signedUrl":"${signedUrl}","publicUrl":"${publicUrl}","headers":{"Content-Type":"image/png"}}`,
+          ),
+        );
+      }),
+      http.put(signedUrl, () => new HttpResponse(null, { status: 200 })),
+    );
+    const client = new MageSpaceClient({ refreshToken: 'rt' });
+
+    // Act
+    const url = await client.references.uploadImage('data:image/png;base64,iVBORw0KAA==');
+
+    // Assert
+    expect(url).toBe(publicUrl);
+    const args = actionArgs as [string, string, string, string];
+    expect(args[0]).toBe('uid-1');
+    expect(args[1]).toBe('reference');
+    expect(args[2]).toMatch(/^[0-9a-f]{64}$/);
+    expect(args[3]).toBe('image/png');
+  });
+
   it('deletes a reference when confirmed', async () => {
     // Arrange
     let sentArgs: unknown;

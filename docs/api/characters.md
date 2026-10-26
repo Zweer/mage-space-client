@@ -407,57 +407,32 @@ When `uid` is omitted or options is `{}`, returns public/featured characters glo
 
 ## Image Upload Flow (for character creation)
 
+> **Updated 2026-10-26.** mage.space removed the base64 Server Actions
+> `uploadCharacterImage` / `uploadReferenceImage` and switched to a Google Cloud
+> Storage **signed-URL** flow (`getEntityImageUploadUrl` → PUT → `publicUrl`).
+> The full reverse-engineered description lives in
+> [`upload.md`](./upload.md). The library's `client.characters.uploadImage(dataUrl)`
+> and `client.references.uploadImage(dataUrl)` methods keep the same signature
+> and return the `cdn3.mage.space/...` `image_url` to pass to `createCharacter` /
+> `createReference`.
+
 Before creating a character, the reference image must be uploaded:
 
-1. Resize/compress the image client-side (max 1816px, fixed 1024px, JPEG quality 1.0)
-2. Convert to data URL: `data:image/jpeg;base64,...`
-3. Call `uploadCharacterImage(dataUrl, uid)` → returns CDN URL
-4. Use the resulting CDN URL as `image_url` in `createCharacter`
+1. (Browser only) resize/compress the image client-side (max 1816px, fixed 1024px, JPEG quality 1.0)
+2. Convert to a data URL: `data:image/jpeg;base64,...`
+3. SHA-256 the bytes, call `getEntityImageUploadUrl(uid, "character", hash, contentType)`
+4. PUT the bytes to the returned `signedUrl` with the returned `headers`
+5. Use the returned `publicUrl` as `image_url` in `createCharacter`
 
-### Upload Character Image (`uploadCharacterImage`)
+For references, step 3 uses `entityType: "reference"` (stored under the
+`/references/` path). See [`upload.md`](./upload.md) for the exact request/response
+shapes, the mandatory signed `headers`, and the 412 (already-exists) semantics.
 
-**Action Hash:** `60869f48fe83aa95969a6549f84023c9e115ee274f`
+### Removed actions
 
-**Request Body:**
-```json
-["data:image/jpeg;base64,/9j/4AAQ...", "r7gvVxS5NCeTiajvYiRRsNO0hiW2"]
-```
-
-| Arg | Type | Description |
-|-----|------|-------------|
-| 0 | string | Data URL (base64-encoded JPEG/PNG/WebP) |
-| 1 | string | User ID |
-
-**Response:** CDN URL string
-```
-"https://cdn3.mage.space/characters/{uid}/image/{hash}.jpg"
-```
-
-**Verified working** ✅ (2026-08-06)
-
-### Upload Reference Image (`uploadReferenceImage`)
-
-**Action Hash:** `606ba2b0eb79bd8f28c609706a89b52e0d9f517fa6`
-
-Same format as `uploadCharacterImage` but stores in `/references/` path:
-
-**Request Body:**
-```json
-["data:image/jpeg;base64,/9j/4AAQ...", "r7gvVxS5NCeTiajvYiRRsNO0hiW2"]
-```
-
-**Response:** CDN URL string
-```
-"https://cdn3.mage.space/references/{uid}/image/{hash}.jpg"
-```
-
-**Verified working** ✅ (2026-08-06)
-
-### Notes
-
-- If the image is already on CDN (`cdn3.mage.space/characters/{uid}/...`), no upload is needed — pass the URL directly
-- Image format: JPEG preferred, also accepts PNG and WebP
-- The server returns the same hash for identical image content (deduplication)
+`uploadCharacterImage` (`60869f48fe83aa95969a6549f84023c9e115ee274f`) and
+`uploadReferenceImage` (`606ba2b0eb79bd8f28c609706a89b52e0d9f517fa6`) no longer
+exist on either host as of 2026-10-26.
 
 ---
 

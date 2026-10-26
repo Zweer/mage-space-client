@@ -8,6 +8,12 @@ import type { ActionSnapshot } from './types.js';
  * Used as a warm seed so the very first call does not pay the discovery cost.
  * Hashes change on every deploy; when one goes stale the client re-discovers
  * automatically (404 → invalidate → refresh).
+ *
+ * @remarks
+ * Image upload now uses the signed-URL action `getEntityImageUploadUrl`
+ * (hash from the 2026-10-26 deploy); the old `uploadCharacterImage` /
+ * `uploadReferenceImage` actions were removed by mage.space. See
+ * `docs/api/upload.md`.
  */
 export const SEED_SNAPSHOT: ActionSnapshot = {
   deploymentId: 'dpl_2w2igPYTRJKeDaX6iAUMbGwDEWZC',
@@ -29,8 +35,7 @@ export const SEED_SNAPSHOT: ActionSnapshot = {
     getCharactersPaginated: '709855baaecec89ad7b73ca44621fe93dfd93fcdee',
     publishCharacter: '40b489876c75c1cd836a108742da4753fb2f671565',
     unpublishCharacter: '40c785b54f5c25bd50cfaebc6817f9d0b9f5e6e145',
-    uploadCharacterImage: '60ef3377c68f0cf34c60646d9356e622a9230a68e5',
-    uploadReferenceImage: '60c497b22c1b65f8a4e78055c5d9e0c2bc49e2c7bd',
+    getEntityImageUploadUrl: '781afde0255a669e470017f5a4174f4bef8a1b5a5a',
     createReference: '403a057e1bd8967b3bb728df1722019d14ca7c4e14',
     updateReference: '60819ffb5ec61122bc4dd52b2232fd486a155d23c6',
     deleteReference: '409098eedd49e49ac5f0275d8af9c70a0988e9859c',

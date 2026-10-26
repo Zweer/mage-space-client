@@ -60,6 +60,18 @@ export class HttpClient {
     private readonly userAgent: string = DEFAULT_USER_AGENT,
   ) {}
 
+  /**
+   * The underlying `fetch` used for Server Action calls.
+   *
+   * @remarks
+   * Exposed so flows that must talk to a non-mage origin with the same injected
+   * transport (e.g. a signed-URL `PUT` to Google Cloud Storage during image
+   * upload) reuse the client's `fetch` instead of the global one.
+   */
+  get fetch(): FetchLike {
+    return this.fetchImpl;
+  }
+
   /** A response that means the action is unavailable (stale hash or gone). */
   private isUnavailable(res: Response): boolean {
     const contentType = res.headers.get('content-type') ?? '';

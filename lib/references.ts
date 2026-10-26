@@ -18,6 +18,7 @@ import type {
   ReferencePage,
   UpdateReferenceInput,
 } from './types.js';
+import { uploadEntityImage } from './upload.js';
 
 /** Server-enforced username constraints (shared with characters, module 64428). */
 const USERNAME_MAX = 15;
@@ -64,17 +65,16 @@ export class ReferencesService {
   /**
    * Upload a reference image (base64 data URL) and return its CDN URL.
    *
+   * @remarks
+   * Uses the current signed-URL flow (`getEntityImageUploadUrl` → PUT to GCS →
+   * `publicUrl`); the old `uploadReferenceImage` Server Action was removed by a
+   * mage.space deploy. See `docs/api/upload.md`. The returned URL is ready to
+   * pass straight to {@link create} as `image_url`.
+   *
    * @param dataUrl - `data:image/jpeg;base64,...` (JPEG preferred; PNG/WebP ok).
    */
   async uploadImage(dataUrl: string): Promise<string> {
-    const [uid, session] = await Promise.all([this.auth.getUserId(), this.auth.getSession()]);
-    const { data } = await this.http.callAction<string>({
-      action: 'uploadReferenceImage',
-      path: REFERENCES_PATH,
-      args: [dataUrl, uid],
-      session,
-    });
-    return data;
+    return uploadEntityImage(this.http, this.auth, dataUrl, 'reference');
   }
 
   /** Create a reusable reference from an uploaded image/audio URL. */

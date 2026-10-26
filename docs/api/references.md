@@ -244,30 +244,18 @@ Returns `"$undefined"` on success (soft-delete).
 
 ---
 
-## Upload Reference Image (`uploadReferenceImage`)
+## Upload Reference Image
 
-**Action Hash:** `606ba2b0eb79bd8f28c609706a89b52e0d9f517fa6`
-**Chunk:** `4809-e5f839e46af4989c.js`
+> **Updated 2026-10-26.** `uploadReferenceImage`
+> (`606ba2b0eb79bd8f28c609706a89b52e0d9f517fa6`) was removed by mage.space.
+> Reference images now use the shared signed-URL flow
+> `getEntityImageUploadUrl(uid, "reference", hash, contentType)` → PUT bytes →
+> `publicUrl`. See [`upload.md`](./upload.md) for the full flow, the mandatory
+> signed headers, and the 412 (already-exists) semantics.
 
-### Request Body
-
-```json
-["data:image/jpeg;base64,/9j/4AAQ...", "r7gvVxS5NCeTiajvYiRRsNO0hiW2"]
-```
-
-| Arg | Type | Description |
-|-----|------|-------------|
-| 0 | string | Data URL (base64-encoded JPEG/PNG/WebP) |
-| 1 | string | User ID |
-
-### Response
-
-CDN URL string:
-```
-"https://cdn3.mage.space/references/{uid}/image/{hash}.jpg"
-```
-
-**Verified working** ✅ (2026-08-06)
+The library's `client.references.uploadImage(dataUrl)` keeps the same signature
+and returns the `https://cdn3.mage.space/references/{uid}/image/{hash}.jpg` URL
+to pass as `image_url` in `createReference`.
 
 ---
 
