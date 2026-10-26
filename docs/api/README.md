@@ -18,6 +18,7 @@ Mage.space is **NOT a REST API**. It uses Next.js Server Actions:
 | `generation.md` | Submit job, poll status, get result | ✅ Verified |
 | `characters.md` | Character search/CRUD/follow/voice | ✅ Verified |
 | `references.md` | Reference CRUD, paginated listing | ✅ Verified |
+| `upload.md` | Signed-URL image upload (characters/references) | ✅ Verified (2026-10-26) |
 | `history.md` | History listing, creations save/delete | ✅ Verified |
 | `concepts.md` | Official concepts + community models | ✅ Verified |
 | `actions.md` | Action hash discovery mechanism | ✅ Verified |

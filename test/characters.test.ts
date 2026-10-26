@@ -178,30 +178,78 @@ describe('MageSpaceClient characters', () => {
     ).rejects.toThrow(/invalid/);
   });
 
-  it('uploads a character image and returns the CDN URL', async () => {
-    // Arrange
-    let sentArgs: unknown;
+  it('uploads a character image via the signed-URL flow and returns the public URL', async () => {
+    // Arrange — getEntityImageUploadUrl returns a signed PUT + public URL, then
+    // the raw bytes are PUT to GCS and the public URL is returned.
+    let actionArgs: unknown;
+    let putHeaders: Headers | undefined;
+    let putBody: ArrayBuffer | undefined;
+    const signedUrl = 'https://storage.googleapis.com/mage-cdn/characters/uid-1/image/h.jpg?sig=x';
+    const publicUrl = 'https://cdn3.mage.space/characters/uid-1/image/h.jpg';
     server.use(
       tokenHandler,
       sessionHandler,
       http.post(`${BASE}/explore`, async ({ request }) => {
-        if (request.headers.get('next-action') !== SEED_SNAPSHOT.hashes.uploadCharacterImage) {
+        if (request.headers.get('next-action') !== SEED_SNAPSHOT.hashes.getEntityImageUploadUrl) {
           return HttpResponse.text('not found', { status: 404 });
         }
-        sentArgs = await request.json();
+        actionArgs = await request.json();
         return HttpResponse.text(
-          envelope('"https://cdn3.mage.space/characters/uid-1/image/abc.jpg"'),
+          envelope(
+            `{"signedUrl":"${signedUrl}","publicUrl":"${publicUrl}","headers":{"Content-Type":"image/jpeg","x-goog-if-generation-match":"0"}}`,
+          ),
         );
+      }),
+      http.put(signedUrl, async ({ request }) => {
+        putHeaders = request.headers;
+        putBody = await request.arrayBuffer();
+        return new HttpResponse(null, { status: 200 });
       }),
     );
     const client = new MageSpaceClient({ refreshToken: 'rt' });
 
     // Act
-    const url = await client.characters.uploadImage('data:image/jpeg;base64,/9j/AAA');
+    const url = await client.characters.uploadImage('data:image/jpeg;base64,/9j/AAA=');
 
     // Assert
-    expect(url).toBe('https://cdn3.mage.space/characters/uid-1/image/abc.jpg');
-    expect(sentArgs).toEqual(['data:image/jpeg;base64,/9j/AAA', 'uid-1']);
+    expect(url).toBe(publicUrl);
+    // Positional args: [uid, entityType, sha256hex, contentType]
+    const args = actionArgs as [string, string, string, string];
+    expect(args[0]).toBe('uid-1');
+    expect(args[1]).toBe('character');
+    expect(args[2]).toMatch(/^[0-9a-f]{64}$/);
+    expect(args[3]).toBe('image/jpeg');
+    // The signed headers must be forwarded verbatim on the PUT.
+    expect(putHeaders?.get('x-goog-if-generation-match')).toBe('0');
+    // The uploaded bytes are the decoded base64 payload.
+    expect(new Uint8Array(putBody as ArrayBuffer)).toEqual(
+      Uint8Array.from(Buffer.from('/9j/AAA=', 'base64')),
+    );
+  });
+
+  it('treats a 412 PUT (object already exists) as success', async () => {
+    // Arrange
+    const signedUrl = 'https://storage.googleapis.com/mage-cdn/characters/uid-1/image/h.jpg?sig=x';
+    const publicUrl = 'https://cdn3.mage.space/characters/uid-1/image/h.jpg';
+    server.use(
+      tokenHandler,
+      sessionHandler,
+      http.post(`${BASE}/explore`, ({ request }) => {
+        if (request.headers.get('next-action') !== SEED_SNAPSHOT.hashes.getEntityImageUploadUrl) {
+          return HttpResponse.text('not found', { status: 404 });
+        }
+        return HttpResponse.text(
+          envelope(`{"signedUrl":"${signedUrl}","publicUrl":"${publicUrl}","headers":{}}`),
+        );
+      }),
+      http.put(signedUrl, () => new HttpResponse(null, { status: 412 })),
+    );
+    const client = new MageSpaceClient({ refreshToken: 'rt' });
+
+    // Act & Assert
+    await expect(client.characters.uploadImage('data:image/jpeg;base64,/9j/AAA=')).resolves.toBe(
+      publicUrl,
+    );
   });
 
   it('returns null from get() when the character does not exist', async () => {
