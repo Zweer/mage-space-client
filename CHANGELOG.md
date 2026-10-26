@@ -1,5 +1,13 @@
 # Changelog
 
+## [1.4.1](https://github.com/Zweer/mage-space-client/compare/v1.4.0...v1.4.1) (2026-10-26)
+
+
+### Bug Fixes
+
+* **upload:** adopt mage.space signed-URL image upload ([c87f9e9](https://github.com/Zweer/mage-space-client/commit/c87f9e93f13fab73463a424d925c15c89aff3bff))
+* **upload:** adopt mage.space signed-URL image upload (uploadCharacterImage removed) ([7372e51](https://github.com/Zweer/mage-space-client/commit/7372e51b61882f74d058793eb25f6f86b3fa61ba))
+
 ## [1.4.0](https://github.com/Zweer/mage-space-client/compare/v1.3.1...v1.4.0) (2026-10-24)
 
 
