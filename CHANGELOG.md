@@ -1,5 +1,13 @@
 # Changelog
 
+## [1.4.3](https://github.com/Zweer/mage-space-client/compare/v1.4.2...v1.4.3) (2026-11-16)
+
+
+### Bug Fixes
+
+* **actions:** :bug: support immutable chunk layout in discovery ([59a08f3](https://github.com/Zweer/mage-space-client/commit/59a08f349a26fb40e800a28a0855ae9171cd2609))
+* **actions:** support immutable chunk layout in discovery ([f135007](https://github.com/Zweer/mage-space-client/commit/f135007b2e82918e337f79ad475c5c488e30a56f))
+
 ## [1.4.2](https://github.com/Zweer/mage-space-client/compare/v1.4.1...v1.4.2) (2026-10-26)
 
 
