@@ -11,8 +11,13 @@ import type { ActionCache, ActionHashes, ActionName, ActionSnapshot, FetchLike }
 
 /** `createServerReference)("<hash>", callServer, void 0, findSourceMapURL, "<fn>")` */
 const CREATE_SERVER_REF_RE = /createServerReference\)\("([0-9a-f]+)"[^)]*?"([^"]+)"\)/g;
-/** `/_next/static/chunks/....js` references in the page HTML. */
-const CHUNK_RE = /\/_next\/static\/chunks\/[^"'`()\s]+?\.js/g;
+/**
+ * `/_next/static/chunks/....js` (or `/_next/static/immutable/chunks/....js`, the
+ * layout mage.space serves since Nov 2026) references in the page HTML.
+ */
+const CHUNK_RE = /\/_next\/static\/(?:immutable\/)?chunks\/[^"'`()\s]+?\.js/g;
+/** Deployment id embedded in asset URLs (`...&amp;dpl=dpl_xxx`) when no header carries it. */
+const PAGE_DEPLOYMENT_ID_RE = /dpl=(dpl_[A-Za-z0-9]+)/;
 /**
  * Default pages scraped during discovery. Server Actions are split per route, so
  * a single page misses route-specific actions (e.g. `deleteReference` lives only
@@ -46,7 +51,7 @@ export interface DiscoveryOptions {
 export interface ChunkListResult {
   /** Vercel deployment id from the first page's `x-deployment-id` (`''` if none). */
   deploymentId: string;
-  /** De-duplicated, insertion-ordered `/_next/static/chunks/*.js` paths. */
+  /** De-duplicated, insertion-ordered chunk `.js` paths (under `/_next/static/`). */
   chunkPaths: string[];
 }
 
@@ -134,6 +139,9 @@ export async function listDiscoveryChunks(opts: {
       deploymentId = res.headers.get('x-deployment-id') ?? '';
     }
     const html = await res.text();
+    if (deploymentId === '') {
+      deploymentId = PAGE_DEPLOYMENT_ID_RE.exec(html)?.[1] ?? '';
+    }
     for (const match of html.matchAll(CHUNK_RE)) {
       const chunkPath = match[0];
       if (chunkPath !== undefined) {

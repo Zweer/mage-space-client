@@ -166,3 +166,24 @@ describe('listDiscoveryChunks + scrapeChunks round-trip', () => {
     expect(list.deploymentId).toBe(whole.deploymentId);
   });
 });
+
+describe('listDiscoveryChunks on the immutable chunk layout', () => {
+  it('finds /_next/static/immutable/chunks and reads the deployment id from asset URLs', async () => {
+    // Arrange — no x-deployment-id header; id only in an image URL, as on mage.space today.
+    server.use(
+      http.get(`${BASE}/explore`, () =>
+        HttpResponse.html(
+          '<img srcSet="/_next/image?url=%2Fa.png&amp;w=96&amp;dpl=dpl_abc123 1x"/>' +
+            '<script src="/_next/static/immutable/chunks/0a3o.js"></script>',
+        ),
+      ),
+    );
+
+    // Act
+    const result = await listDiscoveryChunks({ fetch, baseUrl: BASE, pages: ['/explore'] });
+
+    // Assert
+    expect(result.chunkPaths).toEqual(['/_next/static/immutable/chunks/0a3o.js']);
+    expect(result.deploymentId).toBe('dpl_abc123');
+  });
+});
