@@ -3,7 +3,7 @@
 Complete reference for every model on mage.space after the November 2026 relaunch. Per-family detail (release dates, provider and base model with confidence labels, capabilities, plan gating, web concept ids) lives in:
 
 - [`models/image.md`](./models/image.md), [`models/video.md`](./models/video.md), [`models/audio.md`](./models/audio.md)
-- [`models/nsfw.md`](./models/nsfw.md): per-model NSFW matrix, documentation-based, with evidence levels and a manual-verification column
+- [`models/nsfw.md`](./models/nsfw.md): per-model NSFW matrix, documentation-based, with evidence levels and a author-verification column
 - [`model-eval.md`](./model-eval.md): manual evaluation grid (rubric pending)
 - [`models/legacy-sd.md`](./models/legacy-sd.md): the 433 legacy Stable Diffusion checkpoints
 

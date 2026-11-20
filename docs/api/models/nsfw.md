@@ -18,7 +18,7 @@ Evidence levels:
 | L1 | Official policy or provider terms |
 | L2 | Mage docs, blog, FAQ or catalog data |
 | L3 | Third-party / community reports (SEO blogs are weak sources) |
-| L4 | Manual observation (reserved for the last column, to be filled by Nic) |
+| L4 | Manual observation (reserved for the last column, to be filled by the author) |
 | L5 | Inference |
 
 ## Policy layer that applies to every model
@@ -31,11 +31,11 @@ Evidence levels:
 
 ## Method and status
 
-This matrix is built **from documentation only** (provider policies, Mage docs, blog and release notes, catalog tags, a few third-party reports). No NSFW or borderline generations were run for it. The "Verified by Nic (manual)" column is intentionally empty, to be filled after manual testing.
+This matrix is built **from documentation only** (provider policies, Mage docs, blog and release notes, catalog tags, a few third-party reports). No NSFW or borderline generations were run for it. The "Verified by the author" column is intentionally empty, to be filled after manual testing.
 
 ## Image models
 
-| Family | Who runs / filters | Suggestive, non-explicit | Explicit sexual | Evidence (level) | Verified by Nic (manual) |
+| Family | Who runs / filters | Suggestive, non-explicit | Explicit sexual | Evidence (level) | Verified by the author |
 |---|---|---|---|---|---|
 | Mango (all, incl. Mango 4) | Mage model | **allowed** | restricted: ToS forbids it (L1); technical enforcement undocumented (unknown) | Mage: Mango 3 "excels at fantasy, romance, and sensual themes"  (L2, [blog](https://blog.mage.space/article/mango-3-audio-generation/5e723575-0d7e-4e64-a5cb-53e03eb72c95)); Mango 4 "excels at greater creative freedom"  (L2, [blog](https://www.mage.space/blog/unlimited-seedream-55-mango-4)); fewer-filters claim (L2) |  |
 | Guava | Mage model | **allowed** (documented, L2) | restricted: ToS forbids it (L1); technical enforcement undocumented (unknown) | Mage-model "fewer filters" (L2) |  |
@@ -53,7 +53,7 @@ This matrix is built **from documentation only** (provider policies, Mage docs, 
 
 ## Video models
 
-| Family | Who runs / filters | Suggestive, non-explicit | Explicit sexual | Evidence (level) | Verified by Nic (manual) |
+| Family | Who runs / filters | Suggestive, non-explicit | Explicit sexual | Evidence (level) | Verified by the author |
 |---|---|---|---|---|---|
 | Cherry (Mini, Cherry, Pro, 2, 2 Pro) | Mage model | unknown (leans allowed) | restricted: ToS forbids it (L1); technical enforcement undocumented (unknown) | Mage-model "fewer filters" (L2). Cherry mirrors Seedance in schema and price (L5), but Mage attaches the strict filter only to Seedance |  |
 | Berry, Blueberry, Raspberry, Kiwi, Lemon, Melon, Plum, Magejutsu | Mage model | unknown (leans allowed) | restricted: ToS forbids it (L1); technical enforcement undocumented (unknown) | Mage-model "fewer filters" (L2). Magejutsu: recasting real people needs their permission (L2) |  |
@@ -63,7 +63,7 @@ This matrix is built **from documentation only** (provider policies, Mage docs, 
 
 ## Audio models
 
-| Family | Who runs / filters | Suggestive, non-explicit | Explicit sexual | Evidence (level) | Verified by Nic (manual) |
+| Family | Who runs / filters | Suggestive, non-explicit | Explicit sexual | Evidence (level) | Verified by the author |
 |---|---|---|---|---|---|
 | Eleven Music, Eleven v4 (speech) | ElevenLabs (lab-run) | unknown | restricted: ToS forbids it (L1); provider policy not checked | Audio: sexual imagery does not apply; speech/music content rules not researched |  |
 | MiniMax Music 3, Seed Audio | Open weights / provider unnamed | unknown | restricted: ToS forbids it (L1) | No per-model statement found |  |
