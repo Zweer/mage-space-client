@@ -156,16 +156,27 @@ export class CharactersService {
     return data ?? null;
   }
 
-  /** Fetch multiple characters by id in a single call. */
+  /**
+   * Fetch several of the signed-in user's own characters by id.
+   *
+   * @remarks
+   * Since the 2026-11 relaunch `getCharacters` takes the owner uid instead of an id
+   * list, so this lists the caller's characters and filters by id. Ids that are not
+   * owned by the caller (or do not exist) are omitted; use {@link CharactersService.get}
+   * for a single character by id.
+   * shortcut: one request returns all of the user's characters, switch to
+   * pagination if accounts with thousands of characters matter.
+   */
   async getMany(ids: string[]): Promise<Character[]> {
-    const session = await this.auth.getSession();
+    const [session, uid] = await Promise.all([this.auth.getSession(), this.auth.getUserId()]);
     const { data } = await this.http.callAction<Character[]>({
       action: 'getCharacters',
       path: CHARACTERS_PATH,
-      args: [ids],
+      args: [uid],
       session,
     });
-    return data ?? [];
+    const wanted = new Set(ids);
+    return (data ?? []).filter((c) => wanted.has(c.id));
   }
 
   /** Make a character public. */

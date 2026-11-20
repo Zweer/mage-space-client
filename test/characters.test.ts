@@ -273,6 +273,30 @@ describe('MageSpaceClient characters', () => {
     expect(character).toBeNull();
   });
 
+  it('getMany() lists by uid and filters to the requested ids', async () => {
+    // Arrange
+    let sentBody: unknown;
+    server.use(
+      tokenHandler,
+      sessionHandler,
+      http.post(`${BASE}/explore`, async ({ request }) => {
+        if (request.headers.get('next-action') !== SEED_SNAPSHOT.hashes.getCharacters) {
+          return HttpResponse.text('not found', { status: 404 });
+        }
+        sentBody = await request.json();
+        return HttpResponse.text(envelope('[{"id":"c1"},{"id":"c2"},{"id":"c3"}]'));
+      }),
+    );
+    const client = new MageSpaceClient({ refreshToken: 'rt' });
+
+    // Act
+    const many = await client.characters.getMany(['c1', 'c3', 'foreign']);
+
+    // Assert
+    expect(sentBody).toEqual(['uid-1']);
+    expect(many.map((c) => c.id)).toEqual(['c1', 'c3']);
+  });
+
   it('deletes a character (resolves without a value)', async () => {
     // Arrange
     server.use(
