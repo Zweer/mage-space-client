@@ -24,6 +24,14 @@
     }
   },
   "files": {
-    "includes": ["**", "!**/dist/", "!**/coverage/", "!**/node_modules/", "!**/*.md", "!**/*.yml"]
+    "includes": [
+      "**",
+      "!**/dist/",
+      "!**/coverage/",
+      "!**/node_modules/",
+      "!**/*.md",
+      "!**/*.yml",
+      "!.worktrees"
+    ]
   }
 }
