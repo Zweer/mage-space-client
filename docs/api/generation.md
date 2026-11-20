@@ -584,3 +584,10 @@ When polling returns `status: "success"` for a video:
 | Plum | Max only | Error 4267 for Pro Plus |
 | Berry-2 720p | Gems | Higher resolution costs gems |
 | Kiwi | Retired? | Returns RSC error |
+
+## 2026-11-20 update: Mango 4 and model ids
+
+- Mango 4 is `model_id: "mango-v4"`, `architecture: "mango"`, concept `38311d733c994ab39a3cf002cc40e194` (verified with a live generation at 1K). The previous default `mango-v3-pro` (Mango 3) is still accepted, and the old default concept id `0cd8c7ed2e554d0f98f20c8cf8c0f7c` (matching no live concept) is still accepted by the server, so `conceptId` looks non-critical for Mango.
+- Web and public-API ids differ for some models; see [`models.md`](./models.md#web-ids-vs-api-ids).
+- A provider refusal surfaces on the history item as `status: "error"` with a message such as `provider_block:nsfw:input`, which the client raises as `GenerationError: Generation failed: "provider_block:nsfw:input"` (a provider refusal; policy background in [`models/nsfw.md`](./models/nsfw.md)).
+- Concurrency: running two generation sessions on one account at once returned `429` (`Generation error (code 429)`).

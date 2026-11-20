@@ -10,6 +10,8 @@ Concepts are the official generation presets (Mango, Flux, etc.) that map `model
 
 ---
 
+> **2026-11-20:** `getModels` was **removed** from the live action set. `getConceptsParallel` (same signature) still works and now returns ~1350 active concepts (200 per page; `uid: null` = official, 506 of them, of which ~430 are legacy SD checkpoints). A new `getConcepts` action accepts the same args and returns the same payload. Mango 4 is concept `38311d733c994ab39a3cf002cc40e194` (`model_id: "mango-v4"`). Full census: [`models.md`](./models.md).
+
 ## Get Concepts (`getConceptsParallel`)
 
 **Action Hash:** `7f5e2df471a0e32563e87aa70d5313c12de0eb474e`

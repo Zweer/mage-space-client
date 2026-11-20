@@ -573,3 +573,8 @@ Returns `"$undefined"` on success.
 
 - Requires `__session` cookie (authenticated user)
 - **Discovered from JS bundle** (2026-08-07)
+
+
+## 2026-11-20: `getCharacters` signature change
+
+On deploy `dpl_AbcS43rqLqmYqZwBpkqWiNKDB9Zc` both `getCharacters` and the new `getCharactersParallel` take **one string argument, the owner uid** (`["<uid>"]`) and return that user's characters (array of full character objects). The documented `[[id, ...]]` form now returns HTTP 500 (digest `2855658055`) even for an empty array. Verified live against `/characters`. There is still no get-many-by-id action; options are filtering the uid list client-side, or `getCharacterByUsername`. `getCharacters` hash now `40018fdb48f9c377f8bae2fc540ba65bdb42431842`; `getCharactersParallel` `7f73f848bd54cba416c908c9da8ea53fcb57061737`. All other character actions covered by the e2e suite (create/update/delete/publish/follow/paginate/upload) still pass.
