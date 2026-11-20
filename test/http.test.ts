@@ -21,7 +21,7 @@ const discoveryChunk = `(0,i.createServerReference)("${FRESH_HASH}",i.callServer
 
 const server = setupServer();
 
-beforeAll(() => server.listen({ onUnhandledRequest: 'error' }));
+beforeAll(() => server.listen({ onUnhandledFrame: 'error' }));
 afterEach(() => server.resetHandlers());
 afterAll(() => server.close());
 
