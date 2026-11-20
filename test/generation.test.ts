@@ -32,7 +32,7 @@ const sessionHandler = http.post(`${BASE}/creations`, () =>
 
 const server = setupServer();
 
-beforeAll(() => server.listen({ onUnhandledRequest: 'error' }));
+beforeAll(() => server.listen({ onUnhandledFrame: 'error' }));
 afterEach(() => server.resetHandlers());
 afterAll(() => server.close());
 
@@ -123,6 +123,38 @@ describe('MageSpaceClient generation', () => {
     expect(sentConfig?.berry_aspect_ratio).toBe('16:9');
     expect(sentConfig?.duration).toBe('5');
     expect(sentConfig).not.toHaveProperty('moodboard');
+  });
+
+  it('defaults to Mango 4 and keeps explicit model/concept overrides working', async () => {
+    // Arrange
+    const sent: Array<{ config: Record<string, unknown>; conceptId: unknown }> = [];
+    server.use(
+      tokenHandler,
+      sessionHandler,
+      http.post(`${BASE}/explore`, async ({ request }) => {
+        if (request.headers.get('next-action') === SEED_SNAPSHOT.hashes.runArchitecture) {
+          const body = (await request.json()) as [
+            { architectureConfig: Record<string, unknown>; conceptId: unknown },
+          ];
+          sent.push({ config: body[0].architectureConfig, conceptId: body[0].conceptId });
+          return HttpResponse.text(envelope('{"history_id":"h-3"}'));
+        }
+        return HttpResponse.text('not found', { status: 404 });
+      }),
+    );
+    const client = new MageSpaceClient({ refreshToken: 'rt' });
+
+    // Act
+    await client.generate({ prompt: 'a', aspectRatio: '4:5', resolution: '3K' });
+    await client.generate({ prompt: 'b', model: 'mango-v3-pro', conceptId: 'legacy' });
+
+    // Assert
+    expect(sent[0]?.config.model_id).toBe('mango-v4');
+    expect(sent[0]?.conceptId).toBe('38311d733c994ab39a3cf002cc40e194');
+    expect(sent[0]?.config.aspect_ratio).toBe('4:5');
+    expect(sent[0]?.config.resolution).toBe('3K');
+    expect(sent[1]?.config.model_id).toBe('mango-v3-pro');
+    expect(sent[1]?.conceptId).toBe('legacy');
   });
 
   it('passes the first image and additional_images through for multi-reference generation', async () => {

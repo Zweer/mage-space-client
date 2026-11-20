@@ -83,3 +83,10 @@ discovery. Observation only; no credits spent.
   `getCheckoutPaidStatusParallel` / `getCreditsPaginated` actions are **not yet
   modelled** by the client. They are documented here for future work; no live
   (credit-spending) call has been made against them.
+
+
+## 2026-11-20 re-check
+
+- `getCreditBalance` works with `[]` or `[uid]` (returns a number; account had 3500 Gems at probe time).
+- `getSubscriptionPlayUsage` is **gone** and `getCreditsPaginated` is **absent** from the live deploy (documented above as new on 2026-10-26; either renamed or gated). `purchaseGemsInApp`, `getInAppPurchaseContext`, `getCheckoutPaidStatusParallel`, `verifyUnlimitedPresence` are present.
+- Plans: Free, Basic $10 (500 Gems), Pro $30 (1,500), Pro Plus $60 (3,500), Max $200 (15,000); Gem packs $10→10,000 … $100→110,000. Details in [`models.md`](./models.md).

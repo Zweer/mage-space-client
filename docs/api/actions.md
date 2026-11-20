@@ -9,6 +9,15 @@ Mage.space uses Next.js Server Actions. Each action is identified by a hex hash 
 - **Deployment ID:** `dpl_2w2igPYTRJKeDaX6iAUMbGwDEWZC`
 - **Discovered:** 2026-08-24
 
+> **Update — 2026-11-20 (deploy `dpl_AbcS43rqLqmYqZwBpkqWiNKDB9Zc`).** New site launch.
+> 158 actions discovered (was 85 seeded / 166 on 2026-10-26's full set); 81 of the 85
+> seeded hashes rotated, all 24 `REQUIRED_ACTIONS` still resolve. Removed: `getModels`,
+> `getSubscriptionPlayUsage`, `saveContentSettings`, `deleteUser`. ~75 added (social
+> posts/feed, chat, notifications, character stories; list in [`README.md`](./README.md#re-check-2026-11-20-new-site-deploy-dpl_abcs43rqlqmywbpkqwiknddb9zc)).
+> Signature change: `getCharacters(uid)` (was `getCharacters(ids[])`). `lib/seed.ts`
+> is stale (still the 2026-10-26 deploy); runtime discovery recovers via the 404 path.
+> Chunks are served from `/_next/static/immutable/chunks/` (hash-named, no deploy id in the URL).
+
 > **Update — 2026-10-26 (deploy `dpl_5GCsewvKe5dygHMc6sVMECG7Brad`).**
 > All hashes in the "Complete Action Registry (2026-08-24)" table below are stale
 > as of this deploy — every action's hash rotated (only `getEntityImageUploadUrl`

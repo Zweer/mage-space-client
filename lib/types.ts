@@ -104,8 +104,15 @@ export interface ActionCache {
 // Generation
 // ---------------------------------------------------------------------------
 
-export type AspectRatio = 'portrait' | 'landscape' | 'square';
-export type Resolution = '1K' | '2K' | '4K';
+/**
+ * Image aspect ratio: a named web preset or a `W:H` ratio (e.g. `4:5`, `16:9`).
+ *
+ * @remarks
+ * The web app also uses other presets (e.g. `cinema`), hence the open `W:H` form.
+ */
+export type AspectRatio = 'portrait' | 'landscape' | 'square' | `${number}:${number}`;
+/** Image output resolution token (Mango 4 supports 1K to 4K; others a subset). */
+export type Resolution = '1K' | '2K' | '3K' | '4K';
 /** `unlimited` = Pro Plus/Max, `play` = free tier, `gems` = gem-based. */
 export type GenerationMode = 'unlimited' | 'play' | 'gems';
 /** Job lifecycle status returned by `getHistoryById`. */
@@ -217,9 +224,9 @@ export interface FallbackOptions {
 export interface GenerateOptions {
   /** Prompt text; supports `@character-username` mentions. */
   prompt: string;
-  /** Model/concept id. Defaults to the bundled mango-v3-pro concept id. */
+  /** Model/concept id. Defaults to the bundled Mango 4 concept id. */
   conceptId?: string;
-  /** Model id (default `mango-v3-pro`). */
+  /** Model id (default `mango-v4`; `mango-v3-pro` etc. remain usable). */
   model?: string;
   /** Architecture name (default `mango`). */
   architecture?: string;
@@ -250,9 +257,9 @@ export interface GenerateOptions {
 // ---------------------------------------------------------------------------
 
 /** Aspect ratios accepted by video architectures (`berry_aspect_ratio`). */
-export type VideoAspectRatio = '16:9' | '9:16' | '1:1' | '4:3' | '3:4';
-/** Video output resolutions (`480p` unlimited on Pro Plus; `720p` costs gems). */
-export type VideoResolution = '480p' | '720p';
+export type VideoAspectRatio = '16:9' | '9:16' | '1:1' | '4:3' | '3:4' | `${number}:${number}`;
+/** Video output resolutions (availability depends on the model, e.g. `4k` on Cherry/Seedance). */
+export type VideoResolution = '480p' | '720p' | '1080p' | '4k';
 
 /**
  * The `architectureConfig` payload for video architectures.

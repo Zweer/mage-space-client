@@ -2,7 +2,7 @@
 
 A TypeScript client for mage.space's internal API. Generate AI images and videos programmatically.
 
-**No official mage.space API exists.** This library reverse-engineers the Next.js Server Actions used by the web app to provide a clean, type-safe interface for automation.
+This library reverse-engineers the Next.js Server Actions used by the mage.space web app to provide a clean, type-safe interface for automation, and it spends your plan's unlimited quota. mage.space now also ships an official REST API, SDKs and an MCP server (Gems only, no plan quota); see [`docs/api/approaches.md`](docs/api/approaches.md) to choose between the two, and [`docs/api/models.md`](docs/api/models.md) for every model, its ids, cost, plan gating and NSFW policy.
 
 ## Install
 
@@ -22,7 +22,7 @@ const client = new MageSpaceClient({
 // Submit a generation and poll until it finishes
 const { historyId } = await client.generate({
   prompt: 'A cyberpunk city at sunset, neon lights reflecting on wet streets',
-  model: 'mango-v3-pro',
+  model: 'mango-v4', // default; e.g. 'mango-v3-pro' still works
   aspectRatio: 'portrait',
   resolution: '1K',
 });
