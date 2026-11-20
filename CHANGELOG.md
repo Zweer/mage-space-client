@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.5.0](https://github.com/Zweer/mage-space-client/compare/v1.4.3...v1.5.0) (2026-11-20)
+
+
+### Features
+
+* adapt to the 2026-11 relaunch (Mango 4, getCharacters, model docs) ([#40](https://github.com/Zweer/mage-space-client/issues/40)) ([2cdb58f](https://github.com/Zweer/mage-space-client/commit/2cdb58f7203d141956b87c46317706cc1047c3fd))
+
 ## [1.4.3](https://github.com/Zweer/mage-space-client/compare/v1.4.2...v1.4.3) (2026-11-16)
 
 
