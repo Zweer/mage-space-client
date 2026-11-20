@@ -30,8 +30,8 @@ const GENERATION_PATH = '/explore';
 const HISTORY_PATH = '/creations';
 /** RSC sentinel for an absent value. */
 const UNDEFINED = '$undefined';
-/** Default concept id for mango-v3-pro (from docs — verify per model via rev-eng). */
-const DEFAULT_CONCEPT_ID = '0cd8c7ed2e554d0f98f20c8cf8c0f7c';
+/** Mango 4 (`mango-v4`) concept id, verified live on 2026-11-20 (`docs/api/models.md`). */
+const DEFAULT_CONCEPT_ID = '38311d733c994ab39a3cf002cc40e194';
 /** Default concept id for berry-2 video (from docs — verify per model via rev-eng). */
 const DEFAULT_BERRY_CONCEPT_ID = '0b1fa74f7347406392422d24f2885684';
 
@@ -57,7 +57,7 @@ export class GenerationService {
     const config: ArchitectureConfig = {
       seed: opts.seed ?? null,
       prompt: opts.prompt,
-      model_id: opts.model ?? 'mango-v3-pro',
+      model_id: opts.model ?? 'mango-v4',
       fast_mode: opts.fastMode ?? false,
       resolution: opts.resolution ?? '1K',
       architecture: opts.architecture ?? 'mango',
